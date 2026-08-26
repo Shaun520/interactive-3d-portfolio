@@ -111,6 +111,22 @@ const PaperSceneBackground = () => {
   return null;
 };
 
+// Responsive camera: widen FOV and pull back on narrow viewports to avoid cropping
+function ResponsiveCamera() {
+  const camera = useThree((s) => s.camera);
+  const width = useThree((s) => s.size.width);
+
+  useLayoutEffect(() => {
+    const narrow = width < 720;
+    const tiny = width < 450;
+    camera.fov = narrow ? (tiny ? 74 : 68) : 60;
+    camera.position.z = narrow ? (tiny ? 32 : 30) : 28;
+    camera.updateProjectionMatrix();
+  }, [camera, width]);
+
+  return null;
+}
+
 // Bridge component to use hooks inside SceneProvider
 // Handles dynamic meta tags + deep link auto-teleport
 function DocumentMetaBridge() {
@@ -175,6 +191,9 @@ function AppContent() {
             >
               <color attach="background" args={['#fafafa']} />
               <fog attach="fog" args={['#fafafa', 15, 50]} />
+
+              {/* Responsive camera: adjusts FOV/position Z on narrow viewports */}
+              <ResponsiveCamera />
 
               {/* Scale performance down if fps drops */}
               <PerformanceMonitor

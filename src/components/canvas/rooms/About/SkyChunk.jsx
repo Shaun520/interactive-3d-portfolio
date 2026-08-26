@@ -12,6 +12,10 @@ const CHUNK_LENGTH = 40;
 const CHUNK_WIDTH = 20;
 const CHUNK_HEIGHT = 12;
 
+// Reusable billboard-offset objects（复用，避免 useFrame 每帧分配）
+const CLOUD_OFFSET_ROTATION = new THREE.Euler(0, -Math.PI / 3, 0);
+const CLOUD_OFFSET_QUATERNION = new THREE.Quaternion().setFromEuler(CLOUD_OFFSET_ROTATION);
+
 // === TWARDA LINIA ZANIKANIA (WORLD SPACE) ===
 // Pokój About jest na Z = -25 (group position w AboutRoom.jsx)
 // Wszystko z world Z > CORRIDOR_CLIP_Z jest NATYCHMIAST niewidoczne
@@ -167,9 +171,7 @@ const Cloud = ({
         }
 
         // Billboard effect - always face camera, turned 90° left
-        const offsetRotation = new THREE.Euler(0, -Math.PI / 3, 0);
-        const offsetQuaternion = new THREE.Quaternion().setFromEuler(offsetRotation);
-        meshRef.current.quaternion.copy(camera.quaternion).multiply(offsetQuaternion);
+        meshRef.current.quaternion.copy(camera.quaternion).multiply(CLOUD_OFFSET_QUATERNION);
     });
 
     return (

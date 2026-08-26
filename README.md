@@ -1,4 +1,4 @@
-# 🎨 ITom Dev | Interactive 3D WebGL Portfolio
+# 🎨 Interactive 3D WebGL Portfolio
 
 <div align="center">
   <img src="https://img.shields.io/badge/React-19-blue?style=for-the-badge&logo=react" alt="React" />
@@ -9,6 +9,9 @@
 </div>
 
 <br/>
+
+> [!IMPORTANT]
+> **Sourced from [`portfolio-itom`](https://github.com/ITomPoland/portfolio-itom)** — this repository is a **rebuild & republication** of Tomasz "ITom" Szmajda's original portfolio, published here under the **Shaun520** account. Original code & asset copyright stays with the author (see [LICENSE](LICENSE)).
 
 Welcome to the open-source repository of **Tomasz "ITom" Szmajda's** interactive 3D Web Developer portfolio. This project pushes the limits of modern web technologies by blending spatial WebGL computing, complex React ecosystems, and highly optimized frontend engineering.
 
@@ -56,8 +59,8 @@ To run this application natively on your local machine:
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/ITomPoland/portfolio-itom.git
-   cd portfolio-itom
+   git clone https://github.com/Shaun520/interactive-3d-portfolio.git
+   cd interactive-3d-portfolio
    ```
 
 2. **Install dependencies:**
@@ -70,6 +73,38 @@ To run this application natively on your local machine:
    ```bash
    npm run dev
    ```
+
+4. **Other commands:**
+   ```bash
+   npm run lint    # Run ESLint
+   npm run build   # Production build (outputs to dist/)
+   npm run preview # Preview the production build locally
+   ```
+
+### 🗂️ Sanity Content Studio (`studio/`)
+The CMS backend is an npm workspace (`studio/`, same repo). It talks to the same
+Sanity project as the frontend. Run it only when you need to edit CMS content:
+
+```bash
+npm install
+npm run dev --workspace=studio   # Start the Studio UI
+```
+
+### ⚠️ Known Dependency Notes
+- The **frontend runtime** reports `0` vulnerabilities.
+- `npm audit` additionally surfaces **8 advisories** that all come from the **Sanity CLI toolchain**
+  (details in `studio/`): `js-yaml`/`smol-toml` (via `@vercel/frameworks`) and `uuid` (via `typeid-js`).
+  Fixing them requires `npm audit fix --force`, which downgrades `sanity` to v5 (a breaking change for
+  Studio 3). These are build/deploy-time config parsers, **not** on the frontend or content-render
+  runtime path, so we keep them as-is and revisit when Sanity publishes a clean 6.x.
+
+### 🔧 Asset Tooling (`scripts/`)
+Texture helpers use `sharp`. They are dev-only utilities, not used at runtime:
+- `scripts/optimize_*.js` — resize / downscale textures to power-of-two (POT) sizes for WebGL.
+- `scripts/fix_*.js` — one-off texture fixups (quality, awards size).
+- `scripts/upgrade_contact_quality.js` — specific contact-texture quality pass.
+
+Example: `node scripts/optimize_about.js`
 
 > [!IMPORTANT]
 > Since this project heavily utilizes `vite-plugin-compression` and hundreds of high-res textures, your initial local load might take a few seconds as the dev-server buffers asset delivery. For performance testing, always run `npm run build && npm run preview`.
@@ -92,4 +127,4 @@ The code in this repository is licensed under the [MIT License](LICENSE).
 
 ---
 
-*Designed and Developed by [Tomasz Szmajda (ITom Dev)](https://itomdev.com).*
+*An interactive 3D WebGL portfolio. Original content © Tomasz "ITom" Szmajda — see [LICENSE](LICENSE).*

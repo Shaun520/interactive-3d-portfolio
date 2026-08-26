@@ -1,7 +1,10 @@
 {
-  "name": "portfolio-itom",
+  "name": "interactive-3d-portfolio",
   "private": true,
   "version": "0.0.0",
+  "workspaces": [
+    "studio"
+  ],
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -20,7 +23,6 @@
     "gsap": "^3.14.2",
     "jimp": "^1.6.0",
     "posthog-js": "^1.360.0",
-    "r3f-perf": "^7.2.3",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.11.0",
@@ -37,7 +39,7 @@
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
     "sass": "^1.97.1",
-    "sharp": "^0.34.5",
+    "sharp": "^0.35.4",
     "vite": "^7.2.4",
     "vite-plugin-compression": "^0.5.1"
   }

@@ -21,16 +21,21 @@ This is an **immersive 3D portfolio website** built with React Three Fiber. The 
 
 | Technology | Purpose |
 |------------|---------|
-| React 18 | UI Framework |
+| React 19 | UI Framework |
 | React Three Fiber | 3D Rendering (Three.js wrapper) |
 | @react-three/drei | R3F helpers (Text, useTexture, Html, etc.) |
+| Three.js | Core 3D engine |
 | GSAP | Animations |
+| Sanity | Headless CMS for content/projects/awards |
+| PostHog | Analytics |
 | Vite | Build tool & dev server |
 | SCSS | Styling |
 
 ---
 
 ## 📁 Project Structure
+
+> npm workspaces: `src/` (Vite + React frontend) + `studio/` (Sanity Content Studio, `npm run dev --workspace=studio`).
 
 ```
 src/
@@ -50,6 +55,11 @@ src/
 ├── hooks/
 │   └── useInfiniteCamera.js  # Scroll-based camera movement
 └── styles/
+
+studio/                   # Sanity Content Studio (npm workspace)
+├── schemaTypes/          # CMS content schema definitions
+├── sanity.config.js
+└── sanity.cli.js
 ```
 
 ---
@@ -83,12 +93,11 @@ public/textures/
 
 ## 🚪 Room System
 
-### How Rooms Work
-1. User approaches door in corridor
-2. Click on door → Camera zooms in
-3. Door opens → Camera enters room
-4. Room component mounts and signals ready via `onReady()`
-5. On exit → Camera backs out, door closes
+### How Rooms Work (current)
+1. User clicks a door in the corridor → `enterRoom(roomId)` in `SceneContext`
+2. On the map/teleport: a paper transition closes over the screen, camera moves, then the paper opens revealing the target room
+3. Rooms are managed globally by `SceneContext` (teleport state machine + `TeleportRoom`), and each room controls its own camera while inside
+4. `RoomWarmup` pre-compiles all rooms' shaders offscreen during the preloader for stutter-free entry
 
 ### Room Component Pattern
 ```jsx
@@ -211,4 +220,4 @@ npm run build
 
 ---
 
-*Last updated: 2026-01-22*
+*Last updated: 2026-08-26*

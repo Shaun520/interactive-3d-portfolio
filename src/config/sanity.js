@@ -2,18 +2,18 @@ import { createClient } from '@sanity/client';
 import { createImageUrlBuilder } from '@sanity/image-url';
 
 export const sanityClient = createClient({
-    projectId: 'kv5wjjmj', // Zostanie uzupełnione po utworzeniu projektu w Sanity
+    projectId: 'kv5wjjmj', // 在 Sanity 创建项目后填写
     dataset: 'production',
-    useCdn: true, // `false` dla środowiska dev, `true` dla produkcji żeby było szybciej
-    apiVersion: '2024-03-01', // aktualna data API
+    useCdn: true, // `false` 用于开发环境，`true` 用于生产环境以加快速度
+    apiVersion: '2024-03-01', // 当前 API 日期
 });
 
 const builder = createImageUrlBuilder(sanityClient);
 
-// Funkcja pomocnicza do generowania adresów URL obrazków z Sanity
+// 辅助函数：从 Sanity 生成图片 URL
 export const urlFor = (source) => builder.image(source);
 
-// Funkcja pomocnicza do zamiany domeny Sanity na proxy w Cloudflare
+// 辅助函数：把 Sanity 域名替换为 Cloudflare 代理
 export const getProxyUrl = (imageBuilder) => {
     if (!imageBuilder) return null;
     const url = imageBuilder.url();
