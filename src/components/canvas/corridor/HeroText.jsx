@@ -64,7 +64,8 @@ const HeroText = ({ position = [0, 0.3, 0] }) => {
     // 标题逐字母：居中排布，分裂方向由中心向外发散（文字长度自适应）
     const letters = useMemo(() => {
         const chars = [...title];
-        const spacing = Math.min(0.62, 2.4 / Math.max(chars.length, 1));
+        // 字母之间留一点空隙，避免手写体粘连（按字长自适应，长标题自动收紧）
+        const spacing = Math.min(0.66, 2.7 / Math.max(chars.length, 1));
         const center = (chars.length - 1) / 2;
         return chars.map((char, i) => ({
             char,
@@ -83,7 +84,7 @@ const HeroText = ({ position = [0, 0.3, 0] }) => {
         const FONT_SIZE = 0.16;
         const LETTER_SPACING = 0.04;
         const AVG_CHAR_WIDTH_RATIO = 0.55; // 字符宽度 ≈ fontSize * 比例
-        const WORD_PADDING = 0.12; // 词与词之间额外留白
+        const WORD_PADDING = 0.05; // 词与词之间额外留白（缩小，避免 creative/developer 中间空隙过大）
 
         const widths = words.map(
             (text) => text.length * (FONT_SIZE * AVG_CHAR_WIDTH_RATIO + LETTER_SPACING)
@@ -103,7 +104,8 @@ const HeroText = ({ position = [0, 0.3, 0] }) => {
             text,
             baseX: centers[i],
             // 分裂方向按相对中心的归一化位置：左边向左、右边向右
-            splitDir: Math.sign(centers[i] || 1) * 0.8,
+            // 整体幅度调小，避免副标题中间（creative/developer）被推得太开
+            splitDir: Math.sign(centers[i] || 1) * 0.3,
             delay: 0,
         }));
     }, [tagline]);
@@ -156,7 +158,8 @@ const HeroText = ({ position = [0, 0.3, 0] }) => {
                 if (ref.material) ref.material.opacity = 1;
 
                 const word = taglineWords[i];
-                ref.position.x = word.baseX + word.splitDir * splitAmount.current * 0.6;
+                // 副标题分裂幅度再做一次衰减，避免中间被拉得过开
+                ref.position.x = word.baseX + word.splitDir * splitAmount.current * 0.3;
                 ref.position.y = -0.45 + Math.sin(time * 0.6 + i * 0.3) * 0.008;
             }
         });

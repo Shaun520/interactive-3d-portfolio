@@ -414,6 +414,7 @@ const ContentEditorPanel = () => {
     const savedFieldsRef = useRef({});
     const savedHomeRef = useRef(undefined);
     const savedOutdoorRef = useRef(undefined);
+    const savedCorridorTexturesRef = useRef(undefined);
     const getBase = (rid) => (
         savedBaseRef.current[rid] !== undefined
             ? savedBaseRef.current[rid]
@@ -725,6 +726,76 @@ const ContentEditorPanel = () => {
             const base = getBase(roomId);
             if (base) updateRoomContent(roomId, base);
         }
+    };
+
+    // 通用 POST 到 dev 覆盖保存接口
+    const postRaw = async (body) => {
+        const res = await fetch('/__save-room-content', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error);
+    };
+
+    // 保存全部：屋外 + 走廊(home) + 全部房间内容 + 全部房间门字段 + 走廊场景贴图
+    const handleSaveAll = async () => {
+        setSaveMsg('保存全部中…');
+        try {
+            await postRaw({ roomId: 'outdoor', content: outdoorContent });
+            await postRaw({ roomId: 'home', content: homeContent });
+            for (const o of ROOM_OPTIONS) {
+                await postRaw({ roomId: o.id, content: rooms.find((r) => r.id === o.id)?.content });
+            }
+            for (const r of rooms) {
+                await postRaw({ roomId: r.id, fields: pickDoorFields(r) });
+            }
+            if (corridorTextures) {
+                await postRaw({ roomId: 'corridor', corridorTextures });
+            }
+
+            // 更新「恢复默认 / 恢复全部」基准为刚保存的内容
+            ROOM_OPTIONS.forEach((o) => {
+                savedBaseRef.current[o.id] = rooms.find((r) => r.id === o.id)?.content;
+            });
+            rooms.forEach((r) => { savedFieldsRef.current[r.id] = pickDoorFields(r); });
+            savedHomeRef.current = homeContent;
+            savedOutdoorRef.current = outdoorContent;
+            savedCorridorTexturesRef.current = corridorTextures;
+
+            setSaveMsg('已保存全部 ✓');
+        } catch (e) {
+            setSaveMsg(`保存全部失败：${e}`);
+        }
+    };
+
+    // 恢复全部：把屋外 / 走廊 / 全部房间内容 / 全部房间门 / 走廊贴图恢复到已保存（或配置默认）值
+    const handleResetAll = () => {
+        ROOM_OPTIONS.forEach((o) => {
+            const base = getBase(o.id);
+            if (base) updateRoomContent(o.id, base);
+        });
+        rooms.forEach((r) => {
+            const base = getFieldsBase(r.id);
+            if (base) updateRoom(r.id, base);
+        });
+        const homeBase = savedHomeRef.current !== undefined
+            ? savedHomeRef.current
+            : (siteConfig.home?.content);
+        if (homeBase) updateHomeContent(homeBase);
+
+        const outdoorBase = savedOutdoorRef.current !== undefined
+            ? savedOutdoorRef.current
+            : (siteConfig.outdoor?.content);
+        if (outdoorBase) updateOutdoorContent(outdoorBase);
+
+        const corridorBase = savedCorridorTexturesRef.current !== undefined
+            ? savedCorridorTexturesRef.current
+            : (siteConfig.corridor?.textures);
+        if (corridorBase) updateCorridorTexture(() => corridorBase);
+
+        setSaveMsg('已恢复全部 → 默认 ✓');
     };
 
     // ============ 首页编辑器（走廊欢迎区：标题 / 副标题 / 头像） ============
@@ -1462,8 +1533,13 @@ const ContentEditorPanel = () => {
                         )}
                     </div>
                     <div className="cep-footer">
-                        <button type="button" className="cep-btn" onClick={handleReset}>恢复默认</button>
-                        <button type="button" className="cep-btn primary" onClick={handleSave}>保存修改</button>
+                        <span className="cep-footer-row-label">当前模块</span>
+                        <button type="button" className="cep-btn cep-footer-reset" onClick={handleReset}>恢复默认</button>
+                        <button type="button" className="cep-btn primary cep-footer-save" onClick={handleSave}>保存修改</button>
+                        <div className="cep-footer-divider" />
+                        <span className="cep-footer-row-label">全部</span>
+                        <button type="button" className="cep-btn cep-footer-reset" onClick={handleResetAll}>恢复全部</button>
+                        <button type="button" className="cep-btn primary cep-footer-save" onClick={handleSaveAll}>保存全部</button>
                         {saveMsg && <div className="cep-msg">{saveMsg}</div>}
                     </div>
                 </div>

@@ -470,13 +470,50 @@
 }
 
 .cep-footer {
-    display: flex;
+    display: grid;
+    // 两列：第 1 列左对齐（标签 + 恢复按钮），第 2 列右对齐（保存按钮）
+    grid-template-columns: auto 1fr auto;
     align-items: center;
-    gap: 8px;
+    column-gap: 8px;
+    row-gap: 6px;
     padding: 10px 12px;
     border-top: 2px dashed #1a1a1a;
     background: #fff;
-    flex-wrap: wrap;
+}
+
+.cep-footer-row-label {
+    grid-column: 1;
+    font-size: 11px;
+    font-weight: 700;
+    color: #888;
+    letter-spacing: 0.5px;
+    justify-self: start;
+}
+
+// 恢复按钮：第 2 列左对齐（紧贴标签）
+.cep-footer-reset {
+    grid-column: 2;
+    justify-self: start;
+}
+
+// 保存按钮：第 3 列右对齐（贴右边缘 → 上下两行对齐）
+.cep-footer-save {
+    grid-column: 3;
+    justify-self: end;
+}
+
+// 两组之间的横向分隔线：跨整行
+.cep-footer-divider {
+    grid-column: 1 / -1;
+    height: 1px;
+    background: #ccc;
+    margin: 0;
+}
+
+.cep-msg {
+    grid-column: 1 / -1;
+    font-size: 11px;
+    color: #2d6cb5;
 }
 
 .cep-btn {
@@ -513,7 +550,7 @@
 }
 
 .cep-msg {
-    width: 100%;
+    flex-basis: 100%;
     font-size: 11px;
     color: #2d6cb5;
 
