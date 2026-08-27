@@ -13,7 +13,11 @@ import { SiteConfigProvider, useSiteConfig, useTheme } from './context/SiteConfi
 import NavigationUI from './components/ui/NavigationUI';
 import GlobalOverlay from './components/ui/GlobalOverlay';
 import ScreenReaderOverlay from './components/ui/ScreenReaderOverlay';
-import ContentEditorPanel from './components/ui/ContentEditorPanel';
+// 编辑框仅开发模式加载：生产构建中 import.meta.env.DEV === false，
+// 下面的 lazy(import(...)) 会被 rollup tree-shake 掉，编辑框代码不进入生产包。
+const ContentEditorPanel = import.meta.env.DEV
+    ? lazy(() => import('./components/ui/ContentEditorPanel'))
+    : null;
 import { useDocumentMeta } from './hooks/useDocumentMeta';
 import posthog from 'posthog-js';
 
@@ -237,7 +241,10 @@ function AppContent() {
               <GlobalOverlay />
               <PaperTransition />
               <ScreenReaderOverlay />
-              <ContentEditorPanel />
+              {/* dev-only 编辑框 */}
+              {import.meta.env.DEV && ContentEditorPanel && (
+                <ContentEditorPanel />
+              )}
             </>
           )}
 
