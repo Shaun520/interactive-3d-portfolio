@@ -4,26 +4,37 @@ import { useScene } from '../../context/SceneContext';
 import { useAudio } from '../../context/AudioManager';
 import { setMusicVolume, getMusicVolume } from '../../utils/audioManager';
 import { useAchievements } from '../../context/AchievementsContext';
+import { useRooms, useTheme } from '../../context/SiteConfigContext';
 import AchievementPopup from './AchievementPopup';
 import AchievementsPanel from './AchievementsPanel';
 import '../../styles/NavigationUI.scss';
 
-// Room data for the map - positions are percentages on the map image
-// These positions correspond to the visual elements on the map
-const ROOMS = [
-    { id: 'about', label: 'About', x: 43, y: 38 },      // Paper airplane (left side)
-    { id: 'gallery', label: 'Gallery', x: 43, y: 72 },  // City buildings (bottom left)
-    { id: 'contact', label: 'Contact', x: 57, y: 25 },  // Pier/dock (top right)
-    { id: 'studio', label: 'Studio', x: 57, y: 55 },    // Monitors stack (right side)
-];
-
 // Pin starting position - the dashed circle at the bottom of the tower
 const PIN_START_POSITION = { x: 50.5, y: 97 };
+
+// 从 polygon(...) 提取最后一个点生成「折叠」clipPath（hover 离开时收起高亮）
+const collapseClipPath = (clip) => {
+    const match = clip.match(/polygon\(([^)]+)\)/);
+    if (!match) return clip;
+    const pts = match[1].split(',').map(s => s.trim());
+    if (pts.length < 1) return clip;
+    const [x, y] = pts[pts.length - 1].split(/\s+/);
+    return `polygon(${pts.map(() => `${x} ${y}`).join(', ')})`;
+};
+
+// 地图标签文字：优先 map.label，缺省用 label（自动换行：含 \n 按 \n，否则按空格）
+const mapLabelLines = (room) => {
+    const raw = room.map?.label || room.label || room.shortLabel || '';
+    return raw.includes('\n') ? raw.split('\n') : raw.split(' ').filter(Boolean);
+};
 
 const NavigationUI = () => {
     const { currentRoom, isInRoom, requestExit, hasEntered, teleportTo, isTeleporting } = useScene();
     const { isMuted, toggleMute, globalVolume, setGlobalVolume } = useAudio();
     const { showTutorial, unlockAchievement } = useAchievements();
+    // 房间与主题均来自统一配置
+    const rooms = useRooms();
+    const theme = useTheme();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [hoveredRoom, setHoveredRoom] = useState(null);
     const [isExiting, setIsExiting] = useState(false); // Track when back button is clicked
@@ -51,62 +62,24 @@ const NavigationUI = () => {
         return () => window.removeEventListener('inspectChange', handleInspectChange);
     }, []);
 
-    const paintedMapsRefs = {
-        about: useRef(),
-        gallery: useRef(),
-        contact: useRef(),
-        studio: useRef()
-    };
+    // 动态 painted 层 ref 集合（按 room.id 存取）
+    const paintedMapsRefs = useRef({});
 
+    // clipPath 高亮动画：遍历所有房间，hover/当前房间展开、离开收起
     useEffect(() => {
-        // About (zone: left 10%, top 20%, width 30%, height 35%)
-        // -> X: 10% to 40%, Y: 20% to 55%
-        if (paintedMapsRefs.about.current) {
-            gsap.to(paintedMapsRefs.about.current, {
-                clipPath: (hoveredRoom === 'about' || currentRoom === 'about')
-                    ? 'polygon(10% 20%, 40% 20%, 40% 55%, 10% 55%)'
-                    : 'polygon(10% 20%, 10% 20%, 10% 55%, 10% 55%)',
-                duration: 0.5,
-                ease: "power2.out"
-            });
-        }
-
-        // Gallery (zone: left 10%, bottom 8%, width 30%, height 35%)
-        // -> X: 10% to 40%, Y: 57% to 92% (since bottom=8% means top is 100-8-35=57%)
-        if (paintedMapsRefs.gallery.current) {
-            gsap.to(paintedMapsRefs.gallery.current, {
-                clipPath: (hoveredRoom === 'gallery' || currentRoom === 'gallery')
-                    ? 'polygon(10% 57%, 40% 57%, 40% 92%, 10% 92%)'
-                    : 'polygon(10% 57%, 10% 57%, 10% 92%, 10% 92%)',
-                duration: 0.5,
-                ease: "power2.out"
-            });
-        }
-
-        // Contact (zone: right 5%, top 10%, width 35%, height 25%)
-        // -> X: 60% to 95% (since right=5% means left is 100-5-35=60%), Y: 10% to 35%
-        if (paintedMapsRefs.contact.current) {
-            gsap.to(paintedMapsRefs.contact.current, {
-                clipPath: (hoveredRoom === 'contact' || currentRoom === 'contact')
-                    ? 'polygon(60% 10%, 95% 10%, 95% 35%, 60% 35%)'
-                    : 'polygon(95% 10%, 95% 10%, 95% 35%, 95% 35%)',
-                duration: 0.5,
-                ease: "power2.out"
-            });
-        }
-
-        // Studio (zone: right 15%, bottom 19%, width 25%, height 40%)
-        // -> X: 60% to 85% (since right=15% means left is 100-15-25=60%), Y: 41% to 81% (since bottom=19% means top is 100-19-40=41%)
-        if (paintedMapsRefs.studio.current) {
-            gsap.to(paintedMapsRefs.studio.current, {
-                clipPath: (hoveredRoom === 'studio' || currentRoom === 'studio')
-                    ? 'polygon(60% 41%, 85% 41%, 85% 81%, 60% 81%)'
-                    : 'polygon(85% 41%, 85% 41%, 85% 81%, 85% 81%)',
-                duration: 0.5,
-                ease: "power2.out"
-            });
-        }
-    }, [hoveredRoom, currentRoom]);
+        rooms.forEach((room) => {
+            const el = paintedMapsRefs.current[room.id];
+            if (el && room.map?.clipPath) {
+                gsap.to(el, {
+                    clipPath: (hoveredRoom === room.id || currentRoom === room.id)
+                        ? room.map.clipPath
+                        : collapseClipPath(room.map.clipPath),
+                    duration: 0.5,
+                    ease: 'power2.out'
+                });
+            }
+        });
+    }, [hoveredRoom, currentRoom, rooms]);
 
     useEffect(() => {
         setBgmVol(getMusicVolume());
@@ -329,76 +302,72 @@ const NavigationUI = () => {
                                 </svg>
                             </button>
                         </div>
-                        <div className="map-container">
-                            {/* Map background image */}
-                            <img src="/images/map.webp" alt="Portfolio Map" className="map-image" />
+                        <div className="map-container" style={{ aspectRatio: '100 / 95.5' }}>
+                            {/* Map background image (from theme.assets.map) */}
+                            <img src={theme.assets.map} alt="Portfolio Map" className="map-image" style={{ height: '100%' }} />
 
-                            {/* Painted Map Overlays */}
-                            <img ref={paintedMapsRefs.about} src="/images/map_about_painted.webp" alt="" className="painted-map-layer" style={{ clipPath: 'polygon(10% 20%, 10% 20%, 10% 55%, 10% 55%)' }} />
-                            <img ref={paintedMapsRefs.gallery} src="/images/map_gallery_painted.webp" alt="" className="painted-map-layer" style={{ clipPath: 'polygon(10% 57%, 10% 57%, 10% 92%, 10% 92%)' }} />
-                            <img ref={paintedMapsRefs.contact} src="/images/map_contact_painted.webp" alt="" className="painted-map-layer" style={{ clipPath: 'polygon(95% 10%, 95% 10%, 95% 35%, 95% 35%)' }} />
-                            <img ref={paintedMapsRefs.studio} src="/images/map_studio_painted.webp" alt="" className="painted-map-layer" style={{ clipPath: 'polygon(85% 41%, 85% 41%, 85% 81%, 85% 81%)' }} />
+                            {/* Painted Map Overlays - one per room with a painted image */}
+                            {rooms.map((room) => room.map?.paintedImage ? (
+                                <img
+                                    key={`painted-${room.id}`}
+                                    ref={(el) => { paintedMapsRefs.current[room.id] = el; }}
+                                    src={room.map.paintedImage}
+                                    alt=""
+                                    className="painted-map-layer"
+                                    style={{ top: 'auto', bottom: 0, height: '100%', clipPath: collapseClipPath(room.map.clipPath) }}
+                                />
+                            ) : null)}
 
-                            {/* Hover Zones — 4 quadrants covering the map */}
-                            <button
-                                type="button"
-                                className="map-hover-zone zone-about"
-                                onMouseEnter={() => setHoveredRoom('about')}
-                                onMouseLeave={() => setHoveredRoom(null)}
-                                onFocus={() => setHoveredRoom('about')}
-                                onBlur={() => setHoveredRoom(null)}
-                                onClick={() => handleRoomClick('about')}
-                                aria-label="Teleport to About room"
-                            />
-                            <button
-                                type="button"
-                                className="map-hover-zone zone-gallery"
-                                onMouseEnter={() => setHoveredRoom('gallery')}
-                                onMouseLeave={() => setHoveredRoom(null)}
-                                onFocus={() => setHoveredRoom('gallery')}
-                                onBlur={() => setHoveredRoom(null)}
-                                onClick={() => handleRoomClick('gallery')}
-                                aria-label="Teleport to Gallery room"
-                            />
-                            <button
-                                type="button"
-                                className="map-hover-zone zone-contact"
-                                onMouseEnter={() => setHoveredRoom('contact')}
-                                onMouseLeave={() => setHoveredRoom(null)}
-                                onFocus={() => setHoveredRoom('contact')}
-                                onBlur={() => setHoveredRoom(null)}
-                                onClick={() => handleRoomClick('contact')}
-                                aria-label="Teleport to Contact room"
-                            />
-                            <button
-                                type="button"
-                                className="map-hover-zone zone-studio"
-                                onMouseEnter={() => setHoveredRoom('studio')}
-                                onMouseLeave={() => setHoveredRoom(null)}
-                                onFocus={() => setHoveredRoom('studio')}
-                                onBlur={() => setHoveredRoom(null)}
-                                onClick={() => handleRoomClick('studio')}
-                                aria-label="Teleport to Studio room"
-                            />
+                            {/* Hover Zones - one per configured room (centered on map.x/y) */}
+                            {rooms.map((room) => (
+                                <button
+                                    key={`zone-${room.id}`}
+                                    type="button"
+                                    className="map-hover-zone"
+                                    style={{
+                                        left: `${room.map?.x ?? 50}%`,
+                                        top: `${room.map?.y ?? 50}%`,
+                                        width: '26%',
+                                        height: '26%',
+                                        transform: 'translate(-50%, -50%)'
+                                    }}
+                                    onMouseEnter={() => setHoveredRoom(room.id)}
+                                    onMouseLeave={() => setHoveredRoom(null)}
+                                    onFocus={() => setHoveredRoom(room.id)}
+                                    onBlur={() => setHoveredRoom(null)}
+                                    onClick={() => handleRoomClick(room.id)}
+                                    aria-label={`Teleport to ${room.shortLabel || room.label} room`}
+                                />
+                            ))}
 
                             {/* Permanent Map Text Labels */}
-                            <div className="map-room-label about">ABOUT</div>
-                            <div className="map-room-label gallery">THE<br />GALLERY</div>
-                            <div className="map-room-label contact">CONTACT</div>
-                            <div className="map-room-label studio">THE<br />STUDIO</div>
+                            {rooms.map((room) => (
+                                <div
+                                    key={`label-${room.id}`}
+                                    className="map-room-label"
+                                    style={{
+                                        left: `${room.map?.labelPos?.x ?? room.map?.x ?? 50}%`,
+                                        top: `${room.map?.labelPos?.y ?? room.map?.y ?? 50}%`
+                                    }}
+                                >
+                                    {mapLabelLines(room).map((line, i, arr) => (
+                                        <span key={i}>{line}{i < arr.length - 1 ? <br /> : null}</span>
+                                    ))}
+                                </div>
+                            ))}
 
-                            {/* Pin slot markers - 4 locations */}
-                            {ROOMS.map((room) => (
+                            {/* Pin slot markers - one per configured room */}
+                            {rooms.map((room) => (
                                 <button
                                     key={room.id}
                                     className={`pin-slot ${currentRoom === room.id ? 'active' : ''} ${hoveredRoom === room.id ? 'hovered' : ''}`}
-                                    style={{ left: `${room.x}%`, top: `${room.y}%` }}
+                                    style={{ left: `${room.map?.x ?? 50}%`, top: `${room.map?.y ?? 50}%` }}
                                     onClick={() => handleRoomClick(room.id)}
                                     onMouseEnter={() => setHoveredRoom(room.id)}
                                     onMouseLeave={() => setHoveredRoom(null)}
-                                    title={room.label}
+                                    title={room.shortLabel || room.label}
                                 >
-                                    <img src="/images/pin-slot.webp" alt="" className="slot-image" />
+                                    <img src={theme.assets.pinSlot} alt="" className="slot-image" />
                                 </button>
                             ))}
 
@@ -407,20 +376,20 @@ const NavigationUI = () => {
                                 className="pin-marker"
                                 style={{
                                     left: `${hoveredRoom
-                                        ? ROOMS.find(r => r.id === hoveredRoom)?.x || PIN_START_POSITION.x
+                                        ? rooms.find(r => r.id === hoveredRoom)?.map?.x || PIN_START_POSITION.x
                                         : currentRoom && isInRoom
-                                            ? ROOMS.find(r => r.id === currentRoom)?.x || PIN_START_POSITION.x
+                                            ? rooms.find(r => r.id === currentRoom)?.map?.x || PIN_START_POSITION.x
                                             : PIN_START_POSITION.x
                                         }%`,
                                     top: `${hoveredRoom
-                                        ? ROOMS.find(r => r.id === hoveredRoom)?.y || PIN_START_POSITION.y
+                                        ? rooms.find(r => r.id === hoveredRoom)?.map?.y || PIN_START_POSITION.y
                                         : currentRoom && isInRoom
-                                            ? ROOMS.find(r => r.id === currentRoom)?.y || PIN_START_POSITION.y
+                                            ? rooms.find(r => r.id === currentRoom)?.map?.y || PIN_START_POSITION.y
                                             : PIN_START_POSITION.y
                                         }%`
                                 }}
                             >
-                                <img src="/images/pin.webp" alt="You are here" className="pin-image" />
+                                <img src={theme.assets.pin} alt="You are here" className="pin-image" />
                             </div>
                         </div>
                     </div>

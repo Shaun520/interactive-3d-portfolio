@@ -1,5 +1,5 @@
 import { useScene } from '../../context/SceneContext';
-import { useGalleryProjects, useStudioContent, useAwards } from '../../hooks/useSanityData';
+import { useSiteConfig } from '../../context/SiteConfigContext';
 import '../../styles/ScreenReaderOverlay.scss';
 
 /**
@@ -12,10 +12,12 @@ import '../../styles/ScreenReaderOverlay.scss';
 const ScreenReaderOverlay = () => {
     const { hasEntered, isInRoom, currentRoom, teleportTo, requestExit } = useScene();
     
-    // Pobieranie danych do wygenerowania niewidocznego HTML-a dla SEO / robotów
-    const projects = useGalleryProjects();
-    const studio = useStudioContent();
-    const awards = useAwards();
+    // 内容来自 site.config.js 的 rooms[].content，生成对读屏可见的 HTML
+    const { rooms } = useSiteConfig();
+    const byId = (id) => rooms.find(r => r.id === id)?.content;
+    const projects = byId('gallery')?.projects || [];
+    const studio = byId('studio')?.items || [];
+    const awards = byId('about')?.awards || null;
 
     return (
         <div className="sr-overlay" role="complementary" aria-label="Accessible navigation for 3D portfolio">

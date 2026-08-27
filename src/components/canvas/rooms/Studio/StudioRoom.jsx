@@ -2,14 +2,14 @@ import { useRef, useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { useFrame, useThree, useLoader } from '@react-three/fiber';
 import * as THREE from 'three';
 import gsap from 'gsap';
-import { CONTENT_DATA, PLATFORM_CONFIG, getLatestContent } from './contentData';
+import { PLATFORM_CONFIG, buildStudioContent } from './contentData';
 import { useScene } from '../../../../context/SceneContext';
+import { useSiteConfig } from '../../../../context/SiteConfigContext';
 import { useAchievements } from '../../../../context/AchievementsContext';
 import { TextureLoader } from 'three';
 import FloatingCodeParticles from './FloatingCodeParticles';
 import { PositionalAudio } from '@react-three/drei';
 import { useAudio } from '../../../../context/AudioManager';
-import { useStudioContent } from '../../../../hooks/useSanityData';
 import '../../shaders/RevealMaterial';
 import { isTouchDevice } from '../../../../utils/deviceDetect';
 import { usePaintMaterial } from '../Gallery/usePaintMaterial';
@@ -51,7 +51,26 @@ const VERTICAL_SPACING = 2.5; // Space between monitor rings
 const TOWER_Y_START = -5; // Starting Y offset for tower (negative = lower) -> CONTROLS HEIGHT (UP/DOWN)
 const TOWER_Z_START = -10; // Starting Z position (negative = further away) -> CONTROLS DISTANCE
 
-const StudioRoom = ({ showRoom, onReady, isExiting, isWarmup }) => {
+// ===== 稳定洗牌工具 =====
+// 监视器塔用「基于条目 id 集合」的确定性随机洗牌：
+// 编辑某条内容（id 不变）时顺序保持稳定，方便实时预览；增删条目（id 变）才重新洗牌。
+const hashString = (str) => {
+    let h = 2166136261;
+    for (let i = 0; i < str.length; i++) {
+        h ^= str.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+    }
+    return h >>> 0;
+};
+const mulberry32 = (seed) => () => {
+    let a = seed | 0;
+    a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+};
+
+const StudioRoom = ({ showRoom, onReady, isExiting, isWarmup, content }) => {
     const groupRef = useRef();
     const towerRef = useRef();
     const { camera, size } = useThree();
@@ -107,9 +126,12 @@ const StudioRoom = ({ showRoom, onReady, isExiting, isWarmup }) => {
     const { globalVolume, isMuted } = useAudio();
     const effectiveVolume = isMuted ? 0 : AUDIO_SETTINGS.volume * globalVolume;
 
-    // Pobieranie danych z Sanity.io (fallback do starych danych)
-    const sanityContent = useStudioContent();
-    const activeContent = sanityContent || CONTENT_DATA;
+    // 内容来自 site.config.js 的 content.items（改配置保存后自动刷新预览）
+    // buildStudioContent 补默认纹理 / 兜底 id
+    const activeContent = useMemo(() => buildStudioContent(content?.items), [content]);
+
+    // 编辑面板「聚焦条目 id」：选择条目时把监视器塔定位到对应监视器
+    const { studioFocusId } = useSiteConfig();
 
     const audioRef = useRef();
     useEffect(() => {
@@ -192,14 +214,17 @@ const StudioRoom = ({ showRoom, onReady, isExiting, isWarmup }) => {
     const monitorData = useMemo(() => {
         const items = [];
 
-        // Shuffle content for mixed appearance (seeded for consistency)
-        let shuffledContent = [...activeContent].sort(() => 0.5 - Math.random());
-        
+        // 稳定洗牌：seed 由条目 id 集合决定。编辑条目内容（id 不变）顺序不动，
+        // 增删条目（id 变）才重新洗牌 → 实时编辑时监视器塔保持稳定
+        const seedKey = activeContent.map((it) => it.id).join('|');
+        const rand = mulberry32(hashString(seedKey || 'empty'));
+        let shuffledContent = [...activeContent].sort(() => rand() - 0.5);
+
         // Ensure the tower is extremely tall (at least 12 rings = 48 items)
         // so that the teleportation boundaries are far outside the camera's view.
         if (shuffledContent.length > 0) {
             while (shuffledContent.length < 48) {
-                shuffledContent = [...shuffledContent, ...[...activeContent].sort(() => 0.5 - Math.random())];
+                shuffledContent = [...shuffledContent, ...[...activeContent].sort(() => rand() - 0.5)];
             }
         }
 
@@ -266,8 +291,10 @@ const StudioRoom = ({ showRoom, onReady, isExiting, isWarmup }) => {
             }
         }
 
-        // Initialize offsets
-        monitorOffsets.current = items.map(() => 0);
+        // 沿用已有下落偏移（同位置监视器保持当前高度），
+        // 避免编辑内容触发 monitorData 重算时整塔跳回顶部
+        const prevOffsets = monitorOffsets.current;
+        monitorOffsets.current = items.map((_, i) => prevOffsets[i] || 0);
 
         // Pre-compute totalHeight for seamless loop (avoid calculating in useFrame)
         const minBaseY = items.length > 0 ? Math.min(...items.map(m => m.baseY)) : 0;
@@ -281,6 +308,18 @@ const StudioRoom = ({ showRoom, onReady, isExiting, isWarmup }) => {
     // Destructure for easier access
     const monitors = monitorData.items;
     const totalHeight = monitorData.totalHeight;
+
+    // 聚焦定位：编辑面板选择某条目时，把监视器塔滚动到该监视器（使其 Y 居中视野）
+    useEffect(() => {
+        if (!showRoom || !studioFocusId || monitors.length === 0) return;
+        const target = monitors.find((m) => m.id === studioFocusId);
+        if (!target) return;
+        const curOffset = monitorOffsets.current[target.index] || 0;
+        // 目标 Y = baseY + offset，改为居中视野（Y ≈ 0）
+        const delta = -target.baseY - curOffset;
+        if (Math.abs(delta) < 0.01) return;
+        monitorOffsets.current = monitorOffsets.current.map((o) => (o || 0) + delta);
+    }, [studioFocusId, showRoom, monitors]);
 
     // Need a ref for lastY too
     const lastYRef = useRef(0);
@@ -455,7 +494,7 @@ const StudioRoom = ({ showRoom, onReady, isExiting, isWarmup }) => {
                     ease: 'power2.inOut',
                     onComplete: () => {
                         setIsAnimating(false);
-                        openOverlay(item); // Open global overlay in HUD
+                        openOverlay({ ...item, _src: { roomId: 'studio', kind: 'item', id: item.id } }); // Open global overlay in HUD
                     }
                 });
             }
@@ -580,6 +619,7 @@ const StudioRoom = ({ showRoom, onReady, isExiting, isWarmup }) => {
                         index={index}
                         meshRef={(el) => { monitorRefs.current[index] = el; }}
                         isSelected={selectedMonitor?.id === item.id}
+                        isFocused={studioFocusId === item.id}
                         onMonitorClick={handleMonitorClick}
                         disabled={isAnimating}
                         paintOnBeforeCompile={paintOnBeforeCompile}
@@ -601,7 +641,7 @@ const StudioRoom = ({ showRoom, onReady, isExiting, isWarmup }) => {
 // MONITOR BLOCK COMPONENT - with Paint Reveal on Hover
 // Uses proven two-box approach: painted box behind + sketch box with revealMaterial in front
 // ===========================================
-const MonitorBlock = memo(({ item, meshRef, isSelected, onMonitorClick, disabled, paintOnBeforeCompile, paintUniforms }) => {
+const MonitorBlock = memo(({ item, meshRef, isSelected, isFocused, onMonitorClick, disabled, paintOnBeforeCompile, paintUniforms }) => {
     // Position.y is updated directly by parent's useFrame via meshRef
     const paintedBoxRef = useRef();
     const hideDelayRef = useRef();
@@ -614,7 +654,7 @@ const MonitorBlock = memo(({ item, meshRef, isSelected, onMonitorClick, disabled
     const matRef5 = useRef(); // -Z back
     const matRefs = [matRef0, matRef1, matRef2, matRef3, matRef4, matRef5];
 
-    // Check device types (prioritize Sanity 'device' field, fallback to platform defaults)
+    // 设备形状：条目可显式写 device，缺省按平台默认
     const deviceShape = item.device || (PLATFORM_CONFIG[item.platform]?.shape) || 'monitor';
     const isBlogMonitor = deviceShape === 'monitor';
     const isTvMonitor = deviceShape === 'tv';
@@ -751,6 +791,27 @@ const MonitorBlock = memo(({ item, meshRef, isSelected, onMonitorClick, disabled
     // --- HOVER STATE MANAGEMENT (NO REACT RE-RENDERS!) ---
     const isHoveredRef = useRef(false);
 
+    // 聚焦高亮边框（编辑面板定位该条目时的视觉反馈）
+    const edgeGeo = useMemo(
+        () => new THREE.EdgesGeometry(new THREE.BoxGeometry(item.width, item.height, item.depth)),
+        [item.width, item.height, item.depth]
+    );
+    const edgeMatRef = useRef();
+
+    // 边框呼吸脉冲动画（isFocused 为 true 时循环淡化→亮起；仅编辑面板聚焦触发）
+    useEffect(() => {
+        if (!isFocused || !edgeMatRef.current) return;
+        const tw = gsap.to(edgeMatRef.current, {
+            opacity: 0.25,
+            duration: 0.9,
+            yoyo: true,
+            repeat: -1,
+            ease: 'sine.inOut',
+            overwrite: true,
+        });
+        return () => tw.kill();
+    }, [isFocused]);
+
     const updatePaintState = useCallback(() => {
         if (!faceConfig) return;
 
@@ -824,6 +885,14 @@ const MonitorBlock = memo(({ item, meshRef, isSelected, onMonitorClick, disabled
                 onMonitorClick(item);
             }}
         >
+            {/* 聚焦高亮边框：仅编辑面板选中条目时显示（isFocused），呼吸脉冲 */}
+            {isFocused && (
+                <lineSegments scale={1.15} frustumCulled={false}>
+                    <primitive object={edgeGeo} attach="geometry" />
+                    <lineBasicMaterial ref={edgeMatRef} color="#ff5a3c" transparent opacity={0.9} depthTest={false} />
+                </lineSegments>
+            )}
+
             {/* PAINTED BOX (behind) — initially visible to force shader compilation during loading phase */}
             <mesh ref={paintedBoxRef} visible={true} frustumCulled={false}>
                 <boxGeometry args={[item.width, item.height, item.depth]} />

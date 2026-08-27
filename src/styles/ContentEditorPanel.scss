@@ -1,0 +1,538 @@
+/* =============================================================================
+   ContentEditorPanel — 内容实时编辑面板（开发工具）
+   浮动在 3D 场景右下角；面板叠加显示，手绘风格与站点 UI 保持一致。
+   ============================================================================= */
+
+.cep-toggle {
+    position: fixed;
+    right: 20px;
+    bottom: 90px;
+    z-index: 400;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 2px solid #1a1a1a;
+    background: #fff;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+    transition: transform 0.15s ease, background 0.15s ease;
+
+    &:hover {
+        transform: scale(1.08);
+    }
+
+    &.active {
+        background: #1a1a1a;
+        transform: scale(1.08);
+    }
+}
+
+.cep-panel {
+    position: fixed;
+    right: 20px;
+    bottom: 90px;
+    z-index: 399;
+    width: min(380px, calc(100vw - 40px));
+    max-height: 70vh;
+    display: flex;
+    flex-direction: column;
+    background: #faf8f5;
+    border: 2px solid #1a1a1a;
+    border-radius: 8px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: #1a1a1a;
+    overflow: hidden;
+}
+
+.cep-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-bottom: 2px dashed #1a1a1a;
+    background: #fff;
+
+    h3 {
+        margin: 0;
+        font-size: 15px;
+        letter-spacing: 0.5px;
+        font-weight: 700;
+    }
+
+    .cep-hint {
+        flex: 1;
+        text-align: right;
+        font-size: 11px;
+        color: #777;
+    }
+
+    .cep-close {
+        border: none;
+        background: none;
+        font-size: 20px;
+        line-height: 1;
+        cursor: pointer;
+        color: #1a1a1a;
+        padding: 0 4px;
+    }
+}
+
+.cep-tabs {
+    display: flex;
+    border-bottom: 2px solid #1a1a1a;
+    background: #fff;
+
+    .cep-tab {
+        flex: 1;
+        border: none;
+        background: none;
+        padding: 9px 8px;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.4px;
+        color: #777;
+        cursor: pointer;
+        border-bottom: 3px solid transparent;
+
+        &:hover {
+            color: #1a1a1a;
+        }
+
+        &.active {
+            color: #1a1a1a;
+            border-bottom-color: #1a1a1a;
+            background: #f7f4ee;
+        }
+    }
+}
+
+.cep-body {
+    padding: 12px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.cep-room {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* =============================================================================
+   About 房间「4 阶段」分段控件
+   顶部一行 4 个药丸按钮（①开场 / ②奖项 / ③经历 / ④技能）
+   与 3D 场景的 INTRO → AWARDS → JOURNEY → SKILLS 四个 milestone 一一对应。
+   ============================================================================= */
+.cep-phase-switch {
+    display: flex;
+    gap: 4px;
+    padding: 3px;
+    background: #fff;
+    border: 1.5px solid #1a1a1a;
+    border-radius: 999px;
+    margin-bottom: 2px;
+
+    .cep-phase-pill {
+        flex: 1;
+        border: none;
+        background: transparent;
+        padding: 6px 4px;
+        font-size: 11px;
+        font-weight: 700;
+        color: #777;
+        border-radius: 999px;
+        cursor: pointer;
+        transition: background 0.15s ease, color 0.15s ease;
+        letter-spacing: 0.2px;
+
+        &:hover {
+            color: #1a1a1a;
+        }
+
+        &.active {
+            background: #1a1a1a;
+            color: #fff;
+        }
+    }
+}
+
+.cep-phase-hint {
+    font-size: 10px;
+    color: #888;
+    line-height: 1.4;
+    padding: 0 4px 2px;
+    border-bottom: 1px dashed #d5cfc4;
+    margin-bottom: 2px;
+}
+
+.cep-subgroup {
+    margin: 14px 0 6px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: #8a6d3b;
+    border-bottom: 1px dashed #ddd4c4;
+    padding-bottom: 4px;
+}
+
+.cep-item {
+    border: 1px dashed #c9c4ba;
+    border-radius: 6px;
+    padding: 10px;
+    background: #fff;
+
+    .cep-item-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.4px;
+        margin-bottom: 8px;
+        color: #333;
+    }
+
+    .cep-item-del {
+        flex-shrink: 0;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 1.5px solid #1a1a1a;
+        background: #fff;
+        color: #1a1a1a;
+        font-size: 14px;
+        line-height: 1;
+        cursor: pointer;
+
+        &:hover {
+            background: #f0ede6;
+        }
+    }
+}
+
+// 首页头像帧行：序号 + 上传 + 删除 横向排列
+.cep-avatar-frame {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+
+    .cep-frame-idx {
+        flex-shrink: 0;
+        width: 28px;
+        font-size: 11px;
+        font-weight: 700;
+        color: #888;
+        font-family: 'Consolas', 'Menlo', monospace;
+        text-align: right;
+    }
+
+    .cep-upload {
+        flex: 1;
+        margin-bottom: 0;
+        min-width: 0;
+    }
+
+    .cep-item-del {
+        flex-shrink: 0;
+    }
+}
+
+.cep-item-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 2px;
+
+    .cep-count {
+        font-size: 11px;
+        color: #777;
+        font-weight: 600;
+    }
+}
+
+.cep-section-title {
+    margin: 10px 0 6px;
+    padding-top: 8px;
+    border-top: 1px dashed #d5cfc4;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #2a2a2a;
+}
+
+.cep-upload {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+
+    .cep-upload-url {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 11px;
+        color: #888;
+        font-family: 'Consolas', 'Menlo', monospace;
+    }
+
+    .cep-btn {
+        flex-shrink: 0;
+        padding: 4px 10px;
+        font-size: 11px;
+    }
+
+    // 缩略图按钮（点击放大）
+    // 屋外贴图（门/窗/墙/路径/树/招牌）多为横向矩形，容器用 72×54 横长比
+    // 配合 object-fit: contain + 棋盘格透明底，能完整显示图片不裁剪
+    .cep-upload-thumb {
+        flex-shrink: 0;
+        position: relative;
+        width: 72px;
+        height: 54px;
+        padding: 0;
+        border: 1px solid #d5cfc4;
+        border-radius: 4px;
+        // 棋盘格背景：透明 PNG 也能看清轮廓
+        background-color: #fff;
+        background-image:
+            linear-gradient(45deg, #ece6da 25%, transparent 25%),
+            linear-gradient(-45deg, #ece6da 25%, transparent 25%),
+            linear-gradient(45deg, transparent 75%, #ece6da 75%),
+            linear-gradient(-45deg, transparent 75%, #ece6da 75%);
+        background-size: 8px 8px;
+        background-position: 0 0, 0 4px, 4px -4px, -4px 0;
+        cursor: zoom-in;
+        overflow: hidden;
+        transition: border-color 0.15s, transform 0.15s;
+
+        img {
+            width: 100%;
+            height: 100%;
+            // 完整显示图片，不裁剪（即便门/窗这种长方形也能看到全貌）
+            object-fit: contain;
+            display: block;
+        }
+
+        &:hover {
+            border-color: #2a2a2a;
+            transform: scale(1.05);
+        }
+
+        &.is-local {
+            border-color: #d4a04c;
+            box-shadow: 0 0 0 1px #d4a04c33;
+        }
+    }
+
+    .cep-upload-badge {
+        position: absolute;
+        top: -6px;
+        right: -6px;
+        padding: 1px 4px;
+        font-size: 9px;
+        line-height: 1;
+        color: #fff;
+        background: #d4a04c;
+        border-radius: 6px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+    }
+
+    .cep-upload-placeholder {
+        flex-shrink: 0;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        color: #bbb;
+        border: 1px dashed #d5cfc4;
+        border-radius: 4px;
+    }
+}
+
+// 全屏大图查看
+.cep-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.85);
+    cursor: zoom-out;
+    animation: cep-fade-in 0.15s ease-out;
+
+    > img {
+        max-width: 90vw;
+        max-height: 90vh;
+        object-fit: contain;
+        cursor: default;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        border-radius: 4px;
+    }
+
+    .cep-lightbox-close {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        width: 36px;
+        height: 36px;
+        border: 1px solid #fff;
+        background: transparent;
+        color: #fff;
+        font-size: 22px;
+        line-height: 1;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.15s;
+
+        &:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+    }
+}
+
+@keyframes cep-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.cep-techstack {
+    margin-top: 6px;
+    padding-top: 8px;
+    border-top: 1px dashed #d5cfc4;
+
+    .cep-techstack-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 6px;
+
+        .cep-upload {
+            flex: 1;
+            margin-bottom: 0;
+        }
+    }
+
+    > .cep-upload {
+        margin-bottom: 0;
+    }
+}
+
+.cep-field {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-bottom: 8px;
+
+    &:last-child {
+        margin-bottom: 0;
+    }
+
+    .cep-field-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: #555;
+        letter-spacing: 0.3px;
+    }
+
+    textarea,
+    select {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid #b9b3a8;
+        border-radius: 4px;
+        padding: 5px 7px;
+        font-size: 12px;
+        font-family: inherit;
+        color: #1a1a1a;
+        background: #fff;
+        resize: vertical;
+
+        &:focus {
+            outline: 2px solid #1a1a1a;
+            outline-offset: -1px;
+        }
+    }
+}
+
+.cep-footer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-top: 2px dashed #1a1a1a;
+    background: #fff;
+    flex-wrap: wrap;
+}
+
+.cep-btn {
+    border: 1.5px solid #1a1a1a;
+    background: #fff;
+    color: #1a1a1a;
+    border-radius: 5px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover {
+        background: #f0ede6;
+    }
+
+    &.primary {
+        background: #1a1a1a;
+        color: #fff;
+
+        &:hover {
+            background: #333;
+        }
+    }
+
+    &.cep-btn-danger {
+        border-color: #c0392b;
+        color: #c0392b;
+
+        &:hover {
+            background: #fdecea;
+        }
+    }
+}
+
+.cep-msg {
+    width: 100%;
+    font-size: 11px;
+    color: #2d6cb5;
+
+    &:has(~ .cep-msg) {
+        margin-top: 4px;
+    }
+}
+
+/* 窄屏适配 */
+@media (max-width: 720px) {
+    .cep-panel {
+        right: 10px;
+        bottom: 100px;
+        width: calc(100vw - 20px);
+        max-height: 60vh;
+    }
+
+    .cep-toggle {
+        right: 12px;
+        bottom: 84px;
+    }
+}

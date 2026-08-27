@@ -289,11 +289,12 @@
     }
 
     .map-image {
-        display: block;
+        position: absolute;
+        bottom: 0;
+        left: 0;
         width: 100%;
-        height: auto;
+        height: 100%; // 实际高度由 JSX inline 按 mapPct 覆盖（贴底，顶部留扩展区）
         pointer-events: none;
-        // Brak filtra — linie dopasowane bezpośrednio w obrazie map.webp
     }
 
     .painted-map-layer {

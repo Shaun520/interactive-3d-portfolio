@@ -12,7 +12,6 @@ import PaperMaterial from './PaperMaterial';
 import GalleryClouds from './GalleryClouds';
 import { useAudio } from '../../../../context/AudioManager';
 import { usePaintMaterial } from './usePaintMaterial';
-import { useGalleryProjects } from '../../../../hooks/useSanityData';
 
 // Reusable Vector3 to avoid allocations in useFrame
 const _tempScale = new THREE.Vector3();
@@ -76,6 +75,13 @@ const FALLBACK_PROJECTS = [
 const PROJECT_COUNT = 10; // Keep the count for the infinite scroll feel
 const GAP = 2.5;
 
+// 内置技术栈 logo 文件名（存在 _painted 上色版）；自定义上传的 logo 不在此名单
+const BUILT_IN_TECH_LOGOS = [
+    'csslogo', 'elementorlogo', 'firebaselogo', 'htmllogo',
+    'jslogo', 'netlifylogo', 'phplogo', 'reactlogo',
+    'tailwindlogo', 'wordpresslogo'
+];
+
 // Zmień te wartości aby dopasować proporcje ptaka (legacy ratio 1.41)
 const BIRD_WIDTH = 0.49;
 const BIRD_HEIGHT = 0.35;
@@ -85,7 +91,7 @@ const BIRD_HEIGHT = 0.35;
 // 0.2 = 20% crop from the right (corridor side)
 const RIGHT_CROP_AMOUNT = 0.2;
 
-const GalleryRoom = ({ showRoom, onReady, isExiting, isWarmup }) => {
+const GalleryRoom = ({ showRoom, onReady, isExiting, isWarmup, content }) => {
     const { openOverlay, isTeleporting } = useScene();
     const { showTutorial, unlockAchievement, hidePopup } = useAchievements();
     const { globalVolume, isMuted } = useAudio();
@@ -208,9 +214,8 @@ const GalleryRoom = ({ showRoom, onReady, isExiting, isWarmup }) => {
     // We use matchMedia('(hover: hover)') to detect devices with a cursor/hover capability
     const [canHover, setCanHover] = useState(() => typeof window !== 'undefined' ? window.matchMedia('(hover: hover)').matches : true);
 
-    // Pobieranie danych z Sanity.io (fallback do starych danych)
-    const sanityProjects = useGalleryProjects();
-    const activeProjects = sanityProjects || FALLBACK_PROJECTS;
+    // 项目数据来自 site.config.js 的 content.projects（改配置保存后自动刷新预览）
+    const activeProjects = content?.projects?.length ? content.projects : FALLBACK_PROJECTS;
 
     useEffect(() => {
         const mq = window.matchMedia('(hover: hover)');
@@ -274,9 +279,12 @@ const GalleryRoom = ({ showRoom, onReady, isExiting, isWarmup }) => {
             }
 
             // Map tech stack logos to the correct version (painted or regular)
+            // 只对内置 logo（存在 _painted 上色版）套 painted 规则；
+            // 自定义上传的 logo 直接用原图路径，避免引用不存在的 _painted 图
             const techStack = projectData.techStack.map(path => {
                 if (!canHover) return path; // Keep regular
-                const name = path.split('/').pop().replace('.webp', '');
+                const name = path.split('/').pop().replace(/\.webp$/, '');
+                if (!BUILT_IN_TECH_LOGOS.includes(name)) return path;
                 if (name === 'csslogo') return '/textures/gallery/css3logo_painted.webp';
                 return `/textures/gallery/${name}_painted.webp`;
             });
@@ -291,7 +299,9 @@ const GalleryRoom = ({ showRoom, onReady, isExiting, isWarmup }) => {
                 techStack: techStack
             };
         });
-    }, [projectTextures, backTextureRaw, overlayTextureRaw]);
+        // 依赖必须含 activeProjects：实时编辑改标题/描述/URL 时 projects 要重建，
+        // 否则 3D 卡片文字不更新（退出房间重挂载才会变）
+    }, [projectTextures, paintedTextures, backTextureRaw, overlayTextureRaw, activeProjects, canHover]);
 
     // Function to scroll to a specific project index
     const scrollToIndex = (index, onComplete) => {

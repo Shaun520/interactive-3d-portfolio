@@ -1,58 +1,66 @@
 import { useEffect, useRef } from 'react';
 import { useScene } from '../context/SceneContext';
+import { siteConfig } from '../site.config';
 
 /**
  * useDocumentMeta — Dynamic Meta Tags & Virtual Routing (History API)
- * 
- * Updates the browser URL, page title, and meta description
- * whenever the user enters/exits a 3D room. Also handles the
- * browser back/forward buttons for seamless navigation.
+ *
+ * 由 site.config.js 动态生成 ROOM_META 与 PATH_TO_ROOM：
+ *   - brand.domain → canonical / og:url 域名
+ *   - seo → 走廊页（null）的 title / description
+ *   - rooms[].meta（或兜底 rooms[].label）→ 各房间的 title / description
+ *
+ * 因此改名、改域名、增删房间后，SEO 与虚拟路由会自动同步，无需改本文件。
  */
 
+const { brand, seo } = siteConfig;
+
+// 走廊页
 const ROOM_META = {
     null: {
         path: '/',
-        title: 'ITom — Creative 3D Portfolio',
-        description: 'Interactive 3D developer portfolio by Tomasz "ITom" Szmajda. Explore WebGL experiments, React projects & GSAP animations in a hand-drawn gallery.',
-    },
-    about: {
-        path: '/about',
-        title: 'About Me — ITom Portfolio',
-        description: 'Learn about Tomasz "ITom" Szmajda — a creative frontend developer specializing in 3D web experiences, React, Three.js, and GSAP animations.',
-    },
-    gallery: {
-        path: '/gallery',
-        title: 'Gallery & Projects — ITom Portfolio',
-        description: 'Browse the interactive 3D gallery of web development projects by ITom. Each project is displayed as a hand-drawn card you can flip and explore.',
-    },
-    studio: {
-        path: '/studio',
-        title: 'The Studio — ITom Portfolio',
-        description: 'Explore ITom\'s content studio — YouTube videos, blog posts, and TikToks displayed on floating monitors in an immersive 3D space.',
-    },
-    contact: {
-        path: '/contact',
-        title: 'Contact — ITom Portfolio',
-        description: 'Get in touch with Tomasz "ITom" Szmajda. Find social media links and contact information in this interactive 3D contact room.',
+        title: seo.title,
+        description: seo.description,
     },
 };
 
+// 由配置生成各房间 meta
+siteConfig.rooms.forEach((room) => {
+    ROOM_META[room.id] = {
+        path: room.path,
+        title: room.meta?.title || `${room.label} — ${brand.name}`,
+        description: room.meta?.description || seo.description,
+    };
+});
+
 // Map URL paths back to room IDs for deep linking
-const PATH_TO_ROOM = {
-    '/': null,
-    '/about': 'about',
-    '/gallery': 'gallery',
-    '/studio': 'studio',
-    '/contact': 'contact',
-};
+const PATH_TO_ROOM = { '/': null };
+siteConfig.rooms.forEach((room) => {
+    PATH_TO_ROOM[room.path] = room.id;
+});
+
+const SITE_URL = brand.domain.replace(/\/+$/, '');
 
 /**
  * Returns the room ID that the initial URL points to (for deep linking).
  * Call this once at app startup to determine if we need to auto-teleport.
+ *
+ * 规则：深链接只在「本会话首次访问」该房间 URL 时生效；
+ * 刷新 / 恢复标签页（URL 残留上次房间）时回到走廊，并清掉 URL 中的房间路径，
+ * 避免启动时被自动拽进上次进入的房间。
  */
 export function getInitialRoomFromUrl() {
     const path = window.location.pathname.replace(/\/+$/, '') || '/';
-    return PATH_TO_ROOM[path] !== undefined ? PATH_TO_ROOM[path] : null;
+    const room = PATH_TO_ROOM[path] !== undefined ? PATH_TO_ROOM[path] : null;
+    if (room) {
+        if (sessionStorage.getItem('deepLinkConsumed')) {
+            // 已是本会话内刷新/恢复：回到走廊，URL 清到根路径
+            history.replaceState({}, '', '/');
+            return null;
+        }
+        sessionStorage.setItem('deepLinkConsumed', '1');
+    }
+    return room;
 }
 
 export function useDocumentMeta() {
@@ -82,12 +90,12 @@ export function useDocumentMeta() {
         if (ogDesc) ogDesc.setAttribute('content', meta.description);
 
         const ogUrl = document.querySelector('meta[property="og:url"]');
-        if (ogUrl) ogUrl.setAttribute('content', `https://itomdev.com${meta.path}`);
+        if (ogUrl) ogUrl.setAttribute('content', `${SITE_URL}${meta.path}`);
 
         // Update canonical link to ensure virtual routes are correctly indexable as separate pages
         const canonicalTag = document.querySelector('link[rel="canonical"]');
         if (canonicalTag) {
-            canonicalTag.setAttribute('href', `https://itomdev.com${meta.path}`);
+            canonicalTag.setAttribute('href', `${SITE_URL}${meta.path}`);
         }
 
         // Push to browser history (only if not handling a popstate event and room actually changed)

@@ -31,7 +31,7 @@ const STORY_MILESTONES = [
     { id: 'skills', position: [0, 0, -135], type: 'skills', title: 'SKILLS', subtitle: 'React • Three.js • GSAP • Creative Code' },
 ];
 
-const AboutRoom = ({ showRoom, onReady, isExiting, isWarmup }) => {
+const AboutRoom = ({ showRoom, onReady, isExiting, isWarmup, content }) => {
     const { camera } = useThree();
     const { isTeleporting, overlayContent } = useScene();
     const { showTutorial, unlockAchievement, hidePopup } = useAchievements();
@@ -257,7 +257,13 @@ const AboutRoom = ({ showRoom, onReady, isExiting, isWarmup }) => {
             </group>
 
             {/* === INFINITE SKY WITH CLOUDS + STORY MILESTONES === */}
-            <InfiniteSkyManager scrollProgressRef={scrollPosition} />
+            <InfiniteSkyManager
+                scrollProgressRef={scrollPosition}
+                intro={content?.intro}
+                awards={content?.awards}
+                journey={content?.journey}
+                skills={content?.skills}
+            />
 
             {/* === SKY BACKDROP === */}
             <mesh position={[0, 0, -200]}>

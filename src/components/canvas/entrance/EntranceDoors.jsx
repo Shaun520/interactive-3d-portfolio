@@ -6,6 +6,7 @@ import gsap from 'gsap';
 import '../shaders/RevealMaterial'; // Registers alpha-discard reveal shader
 import { playBackgroundMusic } from '../../../utils/audioManager';
 import { useAchievements } from '../../../context/AchievementsContext';
+import { useSiteConfig } from '../../../context/SiteConfigContext';
 import { isTouchDevice } from '../../../utils/deviceDetect';
 
 // Use same font as App.jsx preload (Inter) - works reliably
@@ -43,6 +44,30 @@ const EntranceDoors = ({
     const windowAvatarRef = useRef();
     const { camera } = useThree();
     const { unlockAchievement } = useAchievements();
+    const { outdoorContent } = useSiteConfig();
+    // 屋外贴图：编辑面板可改，缺省回退
+    const signUrl = outdoorContent?.textures?.sign || '/textures/entrance/sign.webp';
+    const frameUrl = outdoorContent?.textures?.frame || '/textures/doors/frame_sketch.webp';
+    const doorLeftUrl = outdoorContent?.textures?.doorLeft || '/textures/doors/door_left_sketch.webp';
+    const doorRightUrl = outdoorContent?.textures?.doorRight || '/textures/doors/door_right_sketch.webp';
+    const doorLeftPaintedUrl = outdoorContent?.textures?.doorLeftPainted || '/textures/doors/door_left_painted.webp';
+    const doorRightPaintedUrl = outdoorContent?.textures?.doorRightPainted || '/textures/doors/door_right_painted.webp';
+    const handleLeftUrl = outdoorContent?.textures?.handleLeft || '/textures/doors/handle_left_sketch.webp';
+    const handleRightUrl = outdoorContent?.textures?.handleRight || '/textures/doors/handle_right_sketch.webp';
+    const handleLeftPaintedUrl = outdoorContent?.textures?.handleLeftPainted || '/textures/doors/handle_left_painted.webp';
+    const handleRightPaintedUrl = outdoorContent?.textures?.handleRightPainted || '/textures/doors/handle_right_painted.webp';
+    const windowUrl = outdoorContent?.textures?.window || '/textures/entrance/window_sketch.webp';
+    const avatarWindowUrl = outdoorContent?.textures?.avatarWindow || '/textures/entrance/avatar_window.webp';
+    const catFrontBodyUrl = outdoorContent?.textures?.catFrontBody || '/textures/entrance/cat_front_body.webp';
+    const mouseHangingUrl = outdoorContent?.textures?.mouseHanging || '/textures/entrance/mouse_hanging.webp';
+    const bugUrl = outdoorContent?.textures?.bug || '/textures/entrance/bug_sketch.webp';
+    const inkSplashUrl = outdoorContent?.textures?.inkSplash || '/images/ink-splash.webp';
+    const brickWallUrl = outdoorContent?.textures?.brickWall || '/textures/entrance/wall_bricks_2.webp';
+    const stonePathUrl = outdoorContent?.textures?.stonePath || '/textures/entrance/stone-path.webp';
+    const treeUrl = outdoorContent?.textures?.tree || '/textures/entrance/tree_sketch.webp';
+    const potDuckUrl = outdoorContent?.textures?.potDuck || '/textures/entrance/pot_with_duck.webp';
+    // 爬虫点击后的提示文字（屋外编辑器可改，默认 "BUG FIXED!"）
+    const bugFixedText = outdoorContent?.bugText ?? 'BUG FIXED!';
 
     const [isMobile, setIsMobile] = useState(false);
 
@@ -54,33 +79,33 @@ const EntranceDoors = ({
     const isMobileDevice = typeof window !== 'undefined' && (isTouchDevice() || window.innerWidth < 1000);
     const dummyTex = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 
-    const frameTexture = useTexture('/textures/doors/frame_sketch.webp');
-    const doorLeftTexture = useTexture('/textures/doors/door_left_sketch.webp');
-    const doorRightTexture = useTexture('/textures/doors/door_right_sketch.webp');
+    const frameTexture = useTexture(frameUrl);
+    const doorLeftTexture = useTexture(doorLeftUrl);
+    const doorRightTexture = useTexture(doorRightUrl);
 
     // Mobile optimization: Don't load painted textures or handles on phones
-    const doorRightPaintedTexture = useTexture(isMobileDevice ? dummyTex : '/textures/doors/door_right_painted.webp');
-    const doorLeftPaintedTexture = useTexture(isMobileDevice ? dummyTex : '/textures/doors/door_left_painted.webp');
-    const handleLeftTexture = useTexture('/textures/doors/handle_left_sketch.webp');
-    const handleLeftPaintedTexture = useTexture(isMobileDevice ? dummyTex : '/textures/doors/handle_left_painted.webp');
-    const handleRightTexture = useTexture('/textures/doors/handle_right_sketch.webp');
-    const handleRightPaintedTexture = useTexture(isMobileDevice ? dummyTex : '/textures/doors/handle_right_painted.webp');
+    const doorRightPaintedTexture = useTexture(isMobileDevice ? dummyTex : doorRightPaintedUrl);
+    const doorLeftPaintedTexture = useTexture(isMobileDevice ? dummyTex : doorLeftPaintedUrl);
+    const handleLeftTexture = useTexture(handleLeftUrl);
+    const handleLeftPaintedTexture = useTexture(isMobileDevice ? dummyTex : handleLeftPaintedUrl);
+    const handleRightTexture = useTexture(handleRightUrl);
+    const handleRightPaintedTexture = useTexture(isMobileDevice ? dummyTex : handleRightPaintedUrl);
 
     // Dynamic textures for mobile
     const doorBackTexture = useTexture(isMobileDevice ? '/textures/doors/door_back.webp' : '/textures/doors/door_back_left_sketch.webp');
     const edgeTexture = useTexture(isMobileDevice ? '/textures/doors/pien_sketch.webp' : '/textures/doors/pien.webp');
 
-    const bricksTexture = useTexture('/textures/entrance/wall_bricks_2.webp');
-    const stonePathTexture = useTexture('/textures/entrance/stone-path.webp');
+    const bricksTexture = useTexture(brickWallUrl);
+    const stonePathTexture = useTexture(stonePathUrl);
     // const catTexture = useTexture('/textures/entrance/cat_sketch.webp'); // Old side cat
-    const catFrontBodyTexture = useTexture('/textures/entrance/cat_front_body.webp');
-    const windowSketchTexture = useTexture('/textures/entrance/window_sketch.webp');
-    const avatarWindowTexture = useTexture('/textures/entrance/avatar_window.webp');
-    const treeTexture = useTexture('/textures/entrance/tree_sketch.webp');
-    const mouseTexture = useTexture('/textures/entrance/mouse_hanging.webp');
-    const potTexture = useTexture('/textures/entrance/pot_with_duck.webp');
-    const bugTexture = useTexture('/textures/entrance/bug_sketch.webp');
-    const inkSplashTexture = useTexture('/images/ink-splash.webp');
+    const catFrontBodyTexture = useTexture(catFrontBodyUrl);
+    const windowSketchTexture = useTexture(windowUrl);
+    const avatarWindowTexture = useTexture(avatarWindowUrl);
+    const treeTexture = useTexture(treeUrl);
+    const mouseTexture = useTexture(mouseHangingUrl);
+    const potTexture = useTexture(potDuckUrl);
+    const bugTexture = useTexture(bugUrl);
+    const inkSplashTexture = useTexture(inkSplashUrl);
     const speechBubbleTexture = useTexture('/textures/entrance/speech_bubble.webp');
 
     // Cat Ref
@@ -260,7 +285,7 @@ const EntranceDoors = ({
 
         setIsOpen(true);
         setIsAnimating(true);
-        playBackgroundMusic();
+        playBackgroundMusic(outdoorContent?.music);
         unlockAchievement('corridor_enter');
 
         const tl = gsap.timeline({
@@ -940,7 +965,7 @@ const EntranceDoors = ({
                 outlineColor="#ffffff"
                 clipRect={[-1, -0.5, -1 + (clipProgress * 2.5), 0.5]}
             >
-                BUG FIXED!
+                {bugFixedText}
             </Text>
 
 

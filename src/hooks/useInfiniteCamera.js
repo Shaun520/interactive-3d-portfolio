@@ -6,14 +6,16 @@ gsap.registerPlugin(Observer);
 import { useThree, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useAchievements } from '../context/AchievementsContext';
+import { siteConfig } from '../site.config';
 
-// Door positions for auto-glance
-const DOOR_POSITIONS = [
-    { z: -18, side: 'left' },
-    { z: -32, side: 'right' },
-    { z: -48, side: 'left' },
-    { z: -62, side: 'right' },
-];
+// 段起点 Z（来自配置）
+const START_Z = siteConfig.corridor.startZ;
+
+// Door positions for auto-glance（由配置 rooms[] 生成：段内相对偏移 + 门侧）
+const DOOR_POSITIONS = siteConfig.rooms.map((room) => ({
+    z: room.relativeZ,
+    side: room.side,
+}));
 
 /**
  * useInfiniteCamera Hook
@@ -104,7 +106,7 @@ const useInfiniteCamera = ({
 
             // Initialize glanceOffset with the CORRECT value for current position
             // This makes camera immediately look at the door (if near one) instead of looking forward first
-            const initialGlance = calculateGlance(currentZ.current, Math.floor((10 - currentZ.current) / segmentLength));
+            const initialGlance = calculateGlance(currentZ.current, Math.floor((START_Z - currentZ.current) / segmentLength));
             glanceOffset.current = initialGlance;
             targetGlance.current = initialGlance;
 
@@ -113,7 +115,7 @@ const useInfiniteCamera = ({
             targetSwipeGlance.current = 0;
 
             // Recalculate segment
-            currentSegment.current = Math.floor((10 - currentZ.current) / segmentLength);
+            currentSegment.current = Math.floor((START_Z - currentZ.current) / segmentLength);
         }
     }, [scrollEnabled, parallaxEnabled, camera, parallaxIntensity]);
 
@@ -371,7 +373,7 @@ const useInfiniteCamera = ({
             }
 
             // Update segment tracking
-            const segment = Math.floor((10 - currentZ.current) / segmentLength);
+            const segment = Math.floor((START_Z - currentZ.current) / segmentLength);
             if (segment !== currentSegment.current) {
                 currentSegment.current = segment;
             }
@@ -390,7 +392,7 @@ const useInfiniteCamera = ({
 
     // Helper to calculate glance based on Z position
     const calculateGlance = useCallback((z, segment) => {
-        const zOffset = 10 - (segment * segmentLength);
+        const zOffset = START_Z - (segment * segmentLength);
         let bestStrength = 0;
         let bestDir = 0;
 
@@ -432,7 +434,7 @@ const useInfiniteCamera = ({
             currentZ.current = z;
 
             // Recalculate current segment immediately
-            const initSegment = Math.floor((10 - z) / segmentLength);
+            const initSegment = Math.floor((START_Z - z) / segmentLength);
             currentSegment.current = initSegment;
 
             // Sync parallax

@@ -9,6 +9,7 @@ import RoomWarmup from './corridor/RoomWarmup';
 import useInfiniteCamera from '../../hooks/useInfiniteCamera';
 import SignSystem from './entrance/SignSystem';
 import { useScene } from '../../context/SceneContext';
+import { siteConfig } from '../../site.config';
 
 // Positioning:
 // - Segment -1's SegmentDoors are at Z=15
@@ -34,7 +35,7 @@ const Experience = ({ isLoaded, onSceneReady, performanceTier }) => {
     // Camera control - both scroll and parallax only work after entering
     // Disable during teleporting to prevent scroll interference
     const { setCameraOverride } = useInfiniteCamera({
-        segmentLength: 80,
+        segmentLength: siteConfig.corridor.segmentLength,
         scrollSpeed: 0.025,
         parallaxIntensity: 0.4,
         smoothing: 0.06,

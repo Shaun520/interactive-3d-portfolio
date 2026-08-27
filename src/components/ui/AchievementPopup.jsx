@@ -1,12 +1,14 @@
 import React from 'react';
 import { useAchievements, ACHIEVEMENTS } from '../../context/AchievementsContext';
 import { useAudio } from '../../context/AudioManager';
+import { useSiteConfig } from '../../context/SiteConfigContext';
 import { toggleMute as toggleBgmMute, getIsMuted as getBgmMuted, setMusicVolume } from '../../utils/audioManager';
 import '../../styles/AchievementPopup.scss';
 
 const AchievementPopup = () => {
     const { activePopup } = useAchievements();
     const { isMuted, toggleMute, setGlobalVolume } = useAudio();
+    const { outdoorContent } = useSiteConfig();
 
     if (!activePopup) return null;
 
@@ -51,13 +53,13 @@ const AchievementPopup = () => {
                     </div>
                 )}
                 <div className="text-content" style={isSoundPrompt ? { alignItems: 'center', textAlign: 'center' } : {}}>
-                    <span className="title">{data.title}</span>
+                    <span className="title">{isSoundPrompt ? (outdoorContent?.tutorialTitle || data.title) : data.title}</span>
 
                     {!isSoundPrompt ? (
                         <span className="description">{data.label}</span>
                     ) : (
                         <span className="description">
-                            Click a door to enter. Audio is currently
+                            {outdoorContent?.tutorialLabel || data.label}
                             <button
                                 className={`inline-sound-toggle ${!isMuted ? 'on' : 'off'}`}
                                 onClick={(e) => {

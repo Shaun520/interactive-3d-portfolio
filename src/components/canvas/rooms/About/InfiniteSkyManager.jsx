@@ -7,7 +7,6 @@ import SkyChunk, { CHUNK_LENGTH, ROOM_Z } from './SkyChunk';
 import { useScene } from '../../../../context/SceneContext';
 import '../../shaders/RevealBasicMaterial'; // Registers brush-stroke reveal for BasicMaterial
 import { isTouchDevice } from '../../../../utils/deviceDetect';
-import { useAwards } from '../../../../hooks/useSanityData';
 
 // Reusable Vector3 to avoid allocations in event handlers
 const _tempVec3 = new THREE.Vector3();
@@ -149,7 +148,7 @@ const STORY_CYCLE_LENGTH = 160;
 // -27 = 2 metry za drzwiami (w głąb pokoju) - musi matchować CORRIDOR_CLIP_Z w SkyChunk
 const MILESTONE_CORRIDOR_CLIP_Z = -8.0;
 
-const InfiniteSkyManager = ({ scrollProgressRef }) => {
+const InfiniteSkyManager = ({ scrollProgressRef, awards, intro, journey, skills }) => {
     // PRE-CALCULATED FOR scrolProgress = 0
     // currentChunk = floor(0/40) = 0 -> [-1, 0, 1, 2]
     const [activeChunks, setActiveChunks] = useState([-1, 0, 1, 2]);
@@ -227,18 +226,21 @@ const InfiniteSkyManager = ({ scrollProgressRef }) => {
                     <IntroMilestone
                         z={-(cycleIndex * STORY_CYCLE_LENGTH + 15)}
                         scrollProgressRef={scrollProgressRef}
+                        intro={intro}
                     />
 
                     {/* === AWARDS MILESTONE === */}
                     <AwardsMilestone
                         z={-(cycleIndex * STORY_CYCLE_LENGTH + 55)}
                         scrollProgressRef={scrollProgressRef}
+                        awards={awards}
                     />
 
                     {/* === JOURNEY MILESTONE === */}
                     <JourneyMilestone
                         z={-(cycleIndex * STORY_CYCLE_LENGTH + 95)}
                         scrollProgressRef={scrollProgressRef}
+                        journey={journey}
                     />
 
                     {/* === SKILLS MILESTONE === */}
@@ -246,6 +248,7 @@ const InfiniteSkyManager = ({ scrollProgressRef }) => {
                     <SkillsMilestone
                         z={-(cycleIndex * STORY_CYCLE_LENGTH + 135)}
                         scrollProgressRef={scrollProgressRef}
+                        skills={skills}
                     />
                 </group>
             ))}
@@ -257,9 +260,9 @@ const InfiniteSkyManager = ({ scrollProgressRef }) => {
  * INTRO Milestone - Special detailed layout
  * Elements spread apart as they approach camera
  */
-const IntroMilestone = ({ z, scrollProgressRef }) => {
-    // Load avatar texture
-    const avatarTexture = useLoader(THREE.TextureLoader, '/textures/about/awatarnachmurce.webp');
+const IntroMilestone = ({ z, scrollProgressRef, intro }) => {
+    // Load avatar texture (default + override from config)
+    const avatarTexture = useLoader(THREE.TextureLoader, intro?.avatar || '/textures/about/awatarnachmurce.webp');
     const { camera, viewport } = useThree();
     const isTouch = isTouchDevice();
 
@@ -352,7 +355,7 @@ const IntroMilestone = ({ z, scrollProgressRef }) => {
                 anchorY="middle"
                 font="/fonts/RubikScribble-Regular.ttf"
             >
-                TOMASZ SZMAJDA
+                {intro?.name || 'TOMASZ SZMAJDA'}
             </Text>
 
             {/* Subtitle - Brand (spreads right) */}
@@ -365,7 +368,7 @@ const IntroMilestone = ({ z, scrollProgressRef }) => {
                 anchorY="middle"
                 font="/fonts/CabinSketch-Regular.ttf"
             >
-                (ITOM)
+                {intro?.brand || '(ITOM)'}
             </Text>
 
             {/* Avatar on cloud - floating + spreads up-left */}
@@ -390,7 +393,7 @@ const IntroMilestone = ({ z, scrollProgressRef }) => {
                 font="/fonts/CabinSketch-Regular.ttf"
                 fontStyle="italic"
             >
-                "Crafting digital experiences
+                {intro?.motto1 || '"Crafting digital experiences'}
             </Text>
 
             {/* Motto - Line 2 (spreads left) */}
@@ -404,7 +407,7 @@ const IntroMilestone = ({ z, scrollProgressRef }) => {
                 font="/fonts/CabinSketch-Regular.ttf"
                 fontStyle="italic"
             >
-                that push creative boundaries"
+                {intro?.motto2 || 'that push creative boundaries"'}
             </Text>
         </group>
     );
@@ -474,10 +477,9 @@ const AWARDS_DATA = {
  * AWARDS Milestone - Floating Cards
  * SOTY (center), SOTD, SOTM, Featured (behind)
  */
-const AwardsMilestone = ({ z, scrollProgressRef }) => {
-    // Pobieranie danych nagród z Sanity (z fallbackiem)
-    const sanityAwards = useAwards();
-    const awardsData = sanityAwards || AWARDS_DATA;
+const AwardsMilestone = ({ z, scrollProgressRef, awards }) => {
+    // 奖项数据来自 site.config.js 的 content.awards（改配置保存后自动刷新预览）
+    const awardsData = awards || AWARDS_DATA;
 
     const { camera, viewport } = useThree();
     const isTouch = isTouchDevice();
@@ -655,7 +657,7 @@ const AwardsMilestone = ({ z, scrollProgressRef }) => {
                 <AwardButton
                     onClick={(e) => {
                         e.stopPropagation();
-                        openOverlay(awardsData.sotd);
+                        openOverlay({ ...awardsData.sotd, _src: { roomId: 'about', kind: 'award', group: 'sotd' } });
                     }}
                     texture={buttonTexture}
                     paintedTexture={buttonPaintedTexture}
@@ -716,7 +718,7 @@ const AwardsMilestone = ({ z, scrollProgressRef }) => {
                 <AwardButton
                     onClick={(e) => {
                         e.stopPropagation();
-                        openOverlay(awardsData.sotm);
+                        openOverlay({ ...awardsData.sotm, _src: { roomId: 'about', kind: 'award', group: 'sotm' } });
                     }}
                     texture={buttonTexture}
                     paintedTexture={buttonPaintedTexture}
@@ -776,7 +778,7 @@ const AwardsMilestone = ({ z, scrollProgressRef }) => {
                 <AwardButton
                     onClick={(e) => {
                         e.stopPropagation();
-                        openOverlay(awardsData.other);
+                        openOverlay({ ...awardsData.other, _src: { roomId: 'about', kind: 'award', group: 'other' } });
                     }}
                     texture={buttonTexture}
                     paintedTexture={buttonPaintedTexture}
@@ -816,16 +818,21 @@ const AwardsMilestone = ({ z, scrollProgressRef }) => {
  * JOURNEY Milestone - Floating Islands
  * UO Island (left) and Freelance Island (right) floating in clouds
  */
-const JourneyMilestone = ({ z, scrollProgressRef }) => {
+const JourneyMilestone = ({ z, scrollProgressRef, journey }) => {
     const { camera, viewport } = useThree();
     const isTouch = isTouchDevice();
     const groupRef = useRef();
     const uoRef = useRef();
     const freelanceRef = useRef();
 
+    // 从配置读取岛屿数据（缺省回退到硬编码默认值）
+    const islands = journey?.islands || [];
+    const uoData = islands.find((i) => i.id === 'uo') || { label: 'U/O', period: '2025-NOW', image: '/textures/about/uowyspa.webp' };
+    const freelanceData = islands.find((i) => i.id === 'freelance') || { label: 'FREELANCE', period: '2023-NOW', image: '/textures/about/freelancewyspa.webp' };
+
     // Load textures
-    const uoTexture = useLoader(THREE.TextureLoader, '/textures/about/uowyspa.webp');
-    const freelanceTexture = useLoader(THREE.TextureLoader, '/textures/about/freelancewyspa.webp');
+    const uoTexture = useLoader(THREE.TextureLoader, uoData.image);
+    const freelanceTexture = useLoader(THREE.TextureLoader, freelanceData.image);
 
     // Texture settings
     uoTexture.colorSpace = THREE.SRGBColorSpace;
@@ -903,7 +910,7 @@ const JourneyMilestone = ({ z, scrollProgressRef }) => {
                 anchorY="middle"
                 font="/fonts/RubikScribble-Regular.ttf"
             >
-                JOURNEY
+                {journey?.title || 'JOURNEY'}
             </Text>
 
             {/* Subtitle */}
@@ -915,7 +922,7 @@ const JourneyMilestone = ({ z, scrollProgressRef }) => {
                 anchorY="middle"
                 font="/fonts/CabinSketch-Regular.ttf"
             >
-                My path so far...
+                {journey?.subtitle || 'My path so far...'}
             </Text>
 
             {/* === UO ISLAND (Left) === */}
@@ -928,16 +935,16 @@ const JourneyMilestone = ({ z, scrollProgressRef }) => {
                         side={THREE.DoubleSide}
                     />
                 </mesh>
-                {/* NAPIS NA WYSPIE (UO) - EDYTUJ TUTAJ */}
+                {/* LABEL ON ISLAND (UO) - 来自 config */}
                 <Text
-                    position={[0.1, -0.85, 0.1]} // POZYCJA (X, Y, Z)
-                    fontSize={0.4}           // WIELKOŚĆ
+                    position={[0.1, -0.85, 0.1]}
+                    fontSize={0.4}
                     color="#1a1a1a"
                     anchorX="center"
                     anchorY="middle"
                     font="/fonts/CabinSketch-Bold.ttf"
                 >
-                    2025-NOW
+                    {uoData.period}
                 </Text>
             </group>
 
@@ -951,16 +958,16 @@ const JourneyMilestone = ({ z, scrollProgressRef }) => {
                         side={THREE.DoubleSide}
                     />
                 </mesh>
-                {/* NAPIS NA WYSPIE (Freelance) - EDYTUJ TUTAJ */}
+                {/* PERIOD ON ISLAND (Freelance) - 来自 config */}
                 <Text
-                    position={[0, -0.65, 0.1]} // POZYCJA (X, Y, Z)
-                    fontSize={0.5}           // WIELKOŚĆ
+                    position={[0, -0.65, 0.1]}
+                    fontSize={0.5}
                     color="#1a1a1a"
                     anchorX="center"
                     anchorY="middle"
                     font="/fonts/CabinSketch-Bold.ttf"
                 >
-                    2023-NOW
+                    {freelanceData.period}
                 </Text>
             </group>
         </group>
@@ -973,8 +980,8 @@ const JourneyMilestone = ({ z, scrollProgressRef }) => {
  */
 
 // Balloon configuration: size category, texture path, position offset
-// === EDYTUJ WYSOKOŚĆ TUTAJ (zmień wartość 'y' dla każdego balona) ===
-const BALLOON_CONFIG = [
+// === 来自 site.config.js 的 about.content.skills.items；缺省回退到硬编码默认值 ===
+const DEFAULT_BALLOON_CONFIG = [
     // Large balloons (main skills) - front and center
     { texture: '/textures/about/reactduzybalon.webp', paintedTexture: '/textures/about/reactduzybalon_painted.webp', label: 'React', size: 'large', x: -2.5, y: 2, z: 0.3, phase: 0 },
     { texture: '/textures/about/threejsduzybalon.webp', paintedTexture: '/textures/about/threejsduzybalon_painted.webp', label: 'Three.js', size: 'large', x: 2.5, y: 2.5, z: 0.2, phase: 1.5 },
@@ -1331,7 +1338,7 @@ const SkillBalloon = ({ config, revealFactorRef, spreadFactorRef, timeRef }) => 
     );
 };
 
-const SkillsMilestone = ({ z, scrollProgressRef }) => {
+const SkillsMilestone = ({ z, scrollProgressRef, skills }) => {
     const { camera, viewport } = useThree();
     const isTouch = isTouchDevice();
     const groupRef = useRef();
@@ -1339,6 +1346,9 @@ const SkillsMilestone = ({ z, scrollProgressRef }) => {
     const revealFactorRef = useRef(0);
     const spreadFactorRef = useRef(0);
     const timeRef = useRef(0);
+
+    // 从配置读取气球列表（缺省回退到硬编码默认）
+    const balloonConfigs = (skills?.items && skills.items.length > 0) ? skills.items : DEFAULT_BALLOON_CONFIG;
 
     useFrame((state) => {
         if (!groupRef.current) return;
@@ -1399,7 +1409,7 @@ const SkillsMilestone = ({ z, scrollProgressRef }) => {
                 anchorY="middle"
                 font="/fonts/RubikScribble-Regular.ttf"
             >
-                SKILLS
+                {skills?.title || 'SKILLS'}
             </Text>
 
             {/* Subtitle */}
@@ -1411,13 +1421,13 @@ const SkillsMilestone = ({ z, scrollProgressRef }) => {
                 anchorY="middle"
                 font="/fonts/CabinSketch-Regular.ttf"
             >
-                Technologies I love working with
+                {skills?.subtitle || 'Technologies I love working with'}
             </Text>
 
             {/* === FLOATING BALLOONS === */}
-            {BALLOON_CONFIG.map((config, index) => (
+            {balloonConfigs.map((config, index) => (
                 <SkillBalloon
-                    key={index}
+                    key={`${config.label || index}-${index}`}
                     config={config}
                     revealFactorRef={revealFactorRef}
                     spreadFactorRef={spreadFactorRef}

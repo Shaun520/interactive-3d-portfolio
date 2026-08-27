@@ -9,6 +9,8 @@ import { useScene } from '../../../context/SceneContext';
 import { useAchievements } from '../../../context/AchievementsContext';
 import { useAudio } from '../../../context/AudioManager';
 import { isTouchDevice } from '../../../utils/deviceDetect';
+import { siteConfig } from '../../../site.config';
+import { useRooms, useSiteConfig } from '../../../context/SiteConfigContext';
 
 // Constants from CorridorSegment
 const WALL_X_OUTER = 3.5;
@@ -39,21 +41,8 @@ const DOOR_LOOK_ANGLE = Math.PI * 0.334;
 // Higher value = further from door center horizontally
 const DOOR_ALIGN_X = 1.2;
 
-// Door texture mapping - maps label to texture file
-const DOOR_TEXTURES = {
-    'THE GALLERY': '/textures/corridor/doors/drzwiprojekty.webp',
-    'THE STUDIO': '/textures/corridor/doors/drzwisocial.webp',
-    'THE ABOUT': '/textures/corridor/doors/drzwiabout.webp',
-    "LET'S CONNECT": '/textures/corridor/doors/drzwikontakt.webp',
-};
-
-// Painted (colored) variants for brush-stroke reveal on hover
-const DOOR_PAINTED_TEXTURES = {
-    'THE GALLERY': '/textures/corridor/doors/drzwiprojekty_painted.webp',
-    'THE STUDIO': '/textures/corridor/doors/drzwisocial_painted.webp',
-    'THE ABOUT': '/textures/corridor/doors/drzwiabout_painted.webp',
-    "LET'S CONNECT": '/textures/corridor/doors/drzwikontakt_painted.webp',
-};
+// Door texture mapping (sketch + painted) comes from site.config rooms[].textures
+// 默认兜底为 gallery 门贴图（rooms[].textures 未配置时）
 
 
 /**
@@ -112,6 +101,7 @@ const DoorSection = ({
 
     const { unlockAchievement } = useAchievements();
     const { globalVolume, isMuted } = useAudio();
+    const { corridorTextures } = useSiteConfig();
 
     // Audio Refs for 3D positional sound
     const hoverAudioRef = useRef();
@@ -119,16 +109,18 @@ const DoorSection = ({
     const closeAudioRef = useRef();
 
     // Map label to ID for teleport matching
+    // rooms 来自 useRooms()（可变）：门牌/位置/贴图实时修改时，这里同步更新
+    const rooms = useRooms();
     const doorId = useMemo(() => {
         if (roomId) return roomId;
 
-        // Fallback for older code
-        if (label === 'THE GALLERY') return 'gallery';
-        if (label === 'THE STUDIO') return 'studio';
-        if (label === 'THE ABOUT') return 'about';
-        if (label === "LET'S CONNECT") return 'contact';
-        return null;
-    }, [label, roomId]);
+        // Fallback for older code (by label)
+        const found = rooms.find(r => r.label === label);
+        return found ? found.id : null;
+    }, [label, roomId, rooms]);
+
+    // 当前房间配置（门贴图 / 门牌 / 比例 / 镜像等，来自可变 rooms）
+    const roomConfig = useMemo(() => rooms.find(r => r.id === doorId) || {}, [doorId, rooms]);
 
     // Listen for pending door click (auto-click after teleport)
     useEffect(() => {
@@ -189,7 +181,7 @@ const DoorSection = ({
     const currentTilt = useRef(0);
 
     // Load wall texture
-    const originalWallTexture = useTexture('/textures/corridor/wall_texture.webp');
+    const originalWallTexture = useTexture(corridorTextures?.wall || '/textures/corridor/wall_texture.webp');
 
     // Clone texture to have independent repeat settings (fixes scaling issues)
     const wallTexture = useMemo(() => {
@@ -207,23 +199,23 @@ const DoorSection = ({
         return tex;
     }, [originalWallTexture]);
 
-    // Load door textures - use the right texture based on label
-    const doorTexturePath = DOOR_TEXTURES[label] || DOOR_TEXTURES['THE GALLERY'];
+    // Load door textures - use the right texture based on room config
+    const doorTexturePath = roomConfig.textures?.door || '/textures/corridor/doors/drzwiprojekty.webp';
     const doorTexture = useTexture(doorTexturePath);
 
     const isTouch = isTouchDevice();
     const dummyTex = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 
-    const doorPaintedTexturePath = DOOR_PAINTED_TEXTURES[label] || DOOR_PAINTED_TEXTURES['THE GALLERY'];
+    const doorPaintedTexturePath = roomConfig.textures?.doorPainted || '/textures/corridor/doors/drzwiprojekty_painted.webp';
     const doorPaintedTexture = useTexture(isTouch ? dummyTex : doorPaintedTexturePath);
-    const frameTexture = useTexture('/textures/corridor/doors/ramkasingledoors.webp');
-    const handleTexture = useTexture('/textures/corridor/doors/klamkadodrzwi.webp');
-    const handlePaintedTexture = useTexture(isTouch ? dummyTex : '/textures/corridor/doors/klamkadodrzwi_painted.webp');
-    const doorBackTexture = useTexture('/textures/corridor/doors/backsingledoors.webp');
-    const arrowTexture = useTexture('/textures/corridor/strzalka.webp');
+    const frameTexture = useTexture(corridorTextures?.doorFrame || '/textures/corridor/doors/ramkasingledoors.webp');
+    const handleTexture = useTexture(corridorTextures?.doorHandle || '/textures/corridor/doors/klamkadodrzwi.webp');
+    const handlePaintedTexture = useTexture(isTouch ? dummyTex : (corridorTextures?.doorHandlePainted || '/textures/corridor/doors/klamkadodrzwi_painted.webp'));
+    const doorBackTexture = useTexture(corridorTextures?.doorBack || '/textures/corridor/doors/backsingledoors.webp');
+    const arrowTexture = useTexture(corridorTextures?.arrow || '/textures/corridor/strzalka.webp');
 
     // Baseboard texture for door sections (1582x94 px, aspect 16.83:1)
-    const baseboardTexture = useTexture('/textures/corridor/texturadoprogow.webp');
+    const baseboardTexture = useTexture(corridorTextures?.baseboard || '/textures/corridor/texturadoprogow.webp');
     baseboardTexture.wrapS = baseboardTexture.wrapT = THREE.RepeatWrapping;
     baseboardTexture.colorSpace = THREE.SRGBColorSpace;
 
@@ -250,8 +242,8 @@ const DoorSection = ({
         return tex;
     }, [baseboardTexture]);
 
-    // Door dimensions - based on legacy texture aspect ratio (approx 0.376)
-    const doorRatio = label === 'THE STUDIO' ? 0.388 : 0.376;
+    // Door dimensions - ratio comes from room config (default legacy ~0.376)
+    const doorRatio = roomConfig.doorRatio ?? 0.376;
     const doorHeight = 2.5;
     const doorWidth = doorHeight * doorRatio * 1.12;
 
@@ -937,7 +929,7 @@ const DoorSection = ({
     const handlePivotX = side === 'left' ? doorWidth * 0.25 : -doorWidth * 0.25;
 
     // Sign texture mapping - now uses a single empty sign texture
-    const signTextureUrl = '/textures/corridor/pustatabliczka.webp';
+    const signTextureUrl = corridorTextures?.emptySign || '/textures/corridor/pustatabliczka.webp';
     const signLegacyRatio = 1.792; // 2752x1536
     const signHeight = 0.55;
     const signWidth = signHeight * signLegacyRatio;
@@ -1068,79 +1060,59 @@ const DoorSection = ({
                             />
                         </mesh>
 
-                        {/* === DYNAMIC TEXT FOR SIGNS === */}
-                        {label === 'THE GALLERY' && (
-                            <group position={[0, 0, 0.01]}>
-                                <Text
-                                    font="/fonts/CabinSketch-Bold.ttf"
-                                    fontSize={0.25}
-                                    color="#111111"
-                                    anchorX="center"
-                                    anchorY="bottom"
-                                    position={[0, -0.02, 0]}
-                                >
-                                    THE
-                                </Text>
-                                <Text
-                                    font="/fonts/CabinSketch-Bold.ttf"
-                                    fontSize={0.25}
-                                    color="#111111"
-                                    anchorX="center"
-                                    anchorY="top"
-                                    position={[0, +0.02, 0]}
-                                >
-                                    GALLERY
-                                </Text>
-                            </group>
-                        )}
-                        {label === 'THE STUDIO' && (
-                            <group position={[0, 0, 0.01]}>
-                                <Text
-                                    font="/fonts/CabinSketch-Bold.ttf"
-                                    fontSize={0.25}
-                                    color="#111111"
-                                    anchorX="center"
-                                    anchorY="bottom"
-                                    position={[0, -0.02, 0]}
-                                >
-                                    THE
-                                </Text>
-                                <Text
-                                    font="/fonts/CabinSketch-Bold.ttf"
-                                    fontSize={0.25}
-                                    color="#111111"
-                                    anchorX="center"
-                                    anchorY="top"
-                                    position={[0, +0.03, 0]}
-                                >
-                                    STUDIO
-                                </Text>
-                            </group>
-                        )}
-                        {label === 'THE ABOUT' && (
-                            <Text
-                                font="/fonts/CabinSketch-Bold.ttf"
-                                fontSize={0.30}
-                                color="#111111"
-                                anchorX="center"
-                                anchorY="middle"
-                                position={[0, 0, 0.01]}
-                            >
-                                ABOUT
-                            </Text>
-                        )}
-                        {label === "LET'S CONNECT" && (
-                            <Text
-                                font="/fonts/CabinSketch-Bold.ttf"
-                                fontSize={0.25}
-                                color="#111111"
-                                anchorX="center"
-                                anchorY="middle"
-                                position={[0, 0, 0.01]}
-                            >
-                                CONTACT
-                            </Text>
-                        )}
+                        {/* === DYNAMIC TEXT FOR SIGNS (门牌文字 = label；sign 只控制排版) === */}
+                        {(() => {
+                            const sign = roomConfig.sign;
+                            const fontSize = sign?.fontSize || 0.25;
+                            if (sign?.style === 'two-line') {
+                                // 两行：优先用 sign.lines，缺省把 label 按空格拆两行
+                                const lines = sign.lines?.length >= 2
+                                    ? sign.lines
+                                    : (label ? label.split(' ').filter(Boolean) : []);
+                                if (lines.length >= 2) {
+                                    return (
+                                        <group position={[0, 0, 0.01]}>
+                                            <Text
+                                                font={siteConfig.theme.fonts.display3D}
+                                                fontSize={fontSize}
+                                                color="#111111"
+                                                anchorX="center"
+                                                anchorY="bottom"
+                                                position={[0, -0.02, 0]}
+                                            >
+                                                {lines[0]}
+                                            </Text>
+                                            <Text
+                                                font={siteConfig.theme.fonts.display3D}
+                                                fontSize={fontSize}
+                                                color="#111111"
+                                                anchorX="center"
+                                                anchorY="top"
+                                                position={[0, 0.02, 0]}
+                                            >
+                                                {lines[1]}
+                                            </Text>
+                                        </group>
+                                    );
+                                }
+                            }
+                            // single / 默认：直接显示 label
+                            if (label) {
+                                return (
+                                    <Text
+                                        font={siteConfig.theme.fonts.display3D}
+                                        fontSize={fontSize}
+                                        color="#111111"
+                                        anchorX="center"
+                                        anchorY="middle"
+                                        position={[0, 0, 0.01]}
+                                    >
+                                        {label}
+                                    </Text>
+                                );
+                            }
+                            return null;
+                        })()}
                     </group>
 
                     {/* === DOOR FRAME (textured) === */}
@@ -1182,7 +1154,7 @@ const DoorSection = ({
                         <mesh
                             ref={doorPaintedRef}
                             position={[doorMeshX, -0.2, -0.001]}
-                            scale={[(side === 'right' && label !== 'THE STUDIO') ? -1 : 1, 1, 1]}
+                            scale={[(side === 'right' && (roomConfig.flipPaintedOnRight ?? true)) ? -1 : 1, 1, 1]}
                         >
                             <planeGeometry args={[doorWidth, doorHeight]} />
                             <meshBasicMaterial color="#e0e0e0"
@@ -1196,7 +1168,7 @@ const DoorSection = ({
                         {/* Sketch overlay (front) - brush-stroke discard reveals painted beneath */}
                         <mesh
                             position={[doorMeshX, -0.2, 0]}
-                            scale={[(side === 'right' && label !== 'THE STUDIO') ? -1 : 1, 1, 1]}
+                            scale={[(side === 'right' && (roomConfig.flipPaintedOnRight ?? true)) ? -1 : 1, 1, 1]}
                         >
                             <planeGeometry args={[doorWidth, doorHeight]} />
                             <revealMaterial color="#e0e0e0"

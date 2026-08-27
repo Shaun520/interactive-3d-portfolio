@@ -91,7 +91,30 @@ const PHASE = {
     DONE: 'done'               // Bottle floating away
 };
 
-const ContactRoom = ({ showRoom, onReady, isExiting, isWarmup }) => {
+// 社交桶位置预设（前 4 个与原始布局一致，多余的向后排布）
+const SOCIAL_POSITIONS = [
+    // [position, rotation]
+    [[-3, 0.5, -10], [0, 0.2, 0]],    // LINKEDIN
+    [[-5, -0.3, -8], [0, 0.3, 0]],    // GITHUB
+    [[3, 0.5, -10], [0, -0.2, 0]],    // FACEBOOK
+    [[5, -0.3, -8], [0, -0.3, 0]],    // INSTAGRAM
+];
+const SOCIAL_POSITIONS_MOBILE = [
+    [[-1.2, 0.5, -10], [0, 0.2, 0]],
+    [[-1.5, -0.3, -7], [0, 0.3, 0]],
+    [[1.2, 0.5, -10], [0, -0.2, 0]],
+    [[1.5, -0.3, -7], [0, -0.3, 0]],
+];
+
+// 社交桶默认内容（contact.content.socials 为空时兜底）
+const DEFAULT_SOCIALS = [
+    { id: 'linkedin', label: 'LINKEDIN', url: 'https://www.linkedin.com/in/tomasz-szmajda-259337305/' },
+    { id: 'github', label: 'GITHUB', url: 'https://github.com/ITomPoland' },
+    { id: 'facebook', label: 'FACEBOOK', url: 'https://www.facebook.com/people/ITom/61586563487664/' },
+    { id: 'instagram', label: 'INSTAGRAM', url: 'https://www.instagram.com/itom.dev/' },
+];
+
+const ContactRoom = ({ showRoom, onReady, isExiting, isWarmup, content }) => {
     const { camera } = useThree();
     const { isTeleporting } = useScene();
     const { showTutorial, unlockAchievement, hidePopup } = useAchievements();
@@ -249,7 +272,7 @@ const ContactRoom = ({ showRoom, onReady, isExiting, isWarmup }) => {
 
     const handleMailSelect = () => {
         // Awaryjne przekierowanie mailto:
-        window.location.href = 'mailto:tomszma12@gmail.com';
+        window.location.href = `mailto:${content?.email || 'tomszma12@gmail.com'}`;
 
         /* 
         setShowSelection(false);
@@ -398,46 +421,23 @@ const ContactRoom = ({ showRoom, onReady, isExiting, isWarmup }) => {
             </group>
 
             {/* 🛢️ SOCIAL BARRELS (Floating in water) */}
-            {/* LINKEDIN */}
-            <SocialBarrel
-                position={isMobile ? [-1.2, 0.5, -10] : [-3, 0.5, -10]}
-                rotation={[0, 0.2, 0]}
-                texturePath="/textures/contact/beczka.webp"
-                label="LINKEDIN"
-                onClick={() => window.open('https://www.linkedin.com/in/tomasz-szmajda-259337305/', '_blank')}
-                paintOnBeforeCompile={onBeforeCompile}
-                paintUniforms={uniformsData}
-            />
-            {/* GITHUB */}
-            <SocialBarrel
-                position={isMobile ? [-1.5, -0.3, -7] : [-5, -0.3, -8]}
-                rotation={[0, 0.3, 0]}
-                texturePath="/textures/contact/beczka.webp"
-                label="GITHUB"
-                onClick={() => window.open('https://github.com/ITomPoland', '_blank')}
-                paintOnBeforeCompile={onBeforeCompile}
-                paintUniforms={uniformsData}
-            />
-            {/* FACEBOOK */}
-            <SocialBarrel
-                position={isMobile ? [1.2, 0.5, -10] : [3, 0.5, -10]}
-                rotation={[0, -0.2, 0]}
-                texturePath="/textures/contact/beczka.webp"
-                label="FACEBOOK"
-                onClick={() => window.open('https://www.facebook.com/people/ITom/61586563487664/', '_blank')}
-                paintOnBeforeCompile={onBeforeCompile}
-                paintUniforms={uniformsData}
-            />
-            {/* INSTAGRAM */}
-            <SocialBarrel
-                position={isMobile ? [1.5, -0.3, -7] : [5, -0.3, -8]}
-                rotation={[0, -0.3, 0]}
-                texturePath="/textures/contact/beczka.webp"
-                label="INSTAGRAM"
-                onClick={() => window.open('https://www.instagram.com/itom.dev/', '_blank')}
-                paintOnBeforeCompile={onBeforeCompile}
-                paintUniforms={uniformsData}
-            />
+            {(content?.socials && content.socials.length > 0 ? content.socials : DEFAULT_SOCIALS).map((s, i) => {
+                const [pos, rot] = (isMobile ? SOCIAL_POSITIONS_MOBILE : SOCIAL_POSITIONS)[i] || [
+                    [0, -1.5 - i * 0.5, -6], [0, 0, 0],
+                ];
+                return (
+                    <SocialBarrel
+                        key={s.id || `social-${i}`}
+                        position={pos}
+                        rotation={rot}
+                        texturePath="/textures/contact/beczka.webp"
+                        label={s.label}
+                        onClick={() => window.open(s.url, '_blank')}
+                        paintOnBeforeCompile={onBeforeCompile}
+                        paintUniforms={uniformsData}
+                    />
+                );
+            })}
             {/* MAIL (Triggers animation) */}
             <SocialBarrel
                 position={isMobile ? [0, -0.7, -6] : [0, -0.7, -7]}

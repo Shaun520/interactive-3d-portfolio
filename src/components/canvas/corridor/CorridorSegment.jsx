@@ -9,6 +9,8 @@ import Avatar from './Avatar';
 import HeroText from './HeroText';
 import Doodles from './Doodles';
 import CorridorDecorations from './CorridorDecorations';
+import { siteConfig } from '../../../site.config';
+import { useRooms } from '../../../context/SiteConfigContext';
 
 /**
  * CorridorSegment Component
@@ -16,10 +18,11 @@ import CorridorDecorations from './CorridorDecorations';
  * A single repeatable chunk of the infinite corridor.
  * Each segment contains: walls, avatar, ITOM text, doors, decorations.
  * 
- * Segment length: 80 units
- * Positioned based on segmentIndex * segmentLength
+ * Segment length & start Z come from site.config corridor settings
+ * (all rooms' doors repeat every segment).
  */
-const SEGMENT_LENGTH = 80;
+const SEGMENT_LENGTH = siteConfig.corridor.segmentLength;
+const SEGMENT_START_Z = siteConfig.corridor.startZ;
 
 // Sawtooth Geometry Constants (Shared with CorridorWalls logic conceptually)
 const WALL_X_OUTER = 3.5;
@@ -38,50 +41,23 @@ const CorridorSegment = ({
 }) => {
 
     // Calculate Z offset based on segment index
-    // Segment 0 starts at Z=10, goes to Z=-70
-    const zOffset = 10 - (segmentIndex * SEGMENT_LENGTH);
+    // Segment 0 starts at SEGMENT_START_Z, length SEGMENT_LENGTH
+    const zOffset = SEGMENT_START_Z - (segmentIndex * SEGMENT_LENGTH);
 
     // Door positions within this segment (relative to segment start)
+    // 由 useRooms() 实时读取：房间可增删、改名、换门侧，改门牌/位置实时反映
+    const rooms = useRooms();
     const doors = useMemo(() => {
-        const doorDefs = [
-            {
-                id: `gallery-${segmentIndex}`,
-                roomId: 'gallery',
-                relativeZ: -18,
-                side: 'left',
-                label: 'THE GALLERY',
-                icon: '◈',
-                color: '#f5efe6'
-            },
-            {
-                id: `studio-${segmentIndex}`,
-                roomId: 'studio',
-                relativeZ: -32,
-                side: 'right',
-                label: 'THE STUDIO',
-                icon: '▶',
-                color: '#e6f5ef'
-            },
-            {
-                id: `about-${segmentIndex}`,
-                roomId: 'about',
-                relativeZ: -48,
-                side: 'left',
-                label: 'THE ABOUT',
-                icon: '★',
-                color: '#efe6f5',
-                enterDistance: 25 // Enter deep into the room (clouds are far back)
-            },
-            {
-                id: `connect-${segmentIndex}`,
-                roomId: 'contact',
-                relativeZ: -62,
-                side: 'right',
-                label: "LET'S CONNECT",
-                icon: '✉',
-                color: '#f5e6e6'
-            },
-        ];
+        const doorDefs = rooms.map((room) => ({
+            id: `${room.id}-${segmentIndex}`,
+            roomId: room.id,
+            relativeZ: room.relativeZ,
+            side: room.side,
+            label: room.label,
+            icon: room.icon,
+            color: room.color,
+            enterDistance: room.enterDistance,
+        }));
 
         return doorDefs.map(def => {
             // Calculate adjusted Position and Rotation for Sawtooth Walls
@@ -103,7 +79,7 @@ const CorridorSegment = ({
                 rotation: baseRot + rotOffset
             };
         });
-    }, [segmentIndex]);
+    }, [segmentIndex, rooms]);
 
     return (
         <group position={[0, 0, 0]}>
@@ -186,5 +162,5 @@ const CorridorSegment = ({
 
 const MemoizedCorridorSegment = memo(CorridorSegment);
 
-export { SEGMENT_LENGTH, WALL_X_OUTER, WALL_X_INNER, DOOR_Z_SPAN };
+export { SEGMENT_LENGTH, SEGMENT_START_Z, WALL_X_OUTER, WALL_X_INNER, DOOR_Z_SPAN };
 export default MemoizedCorridorSegment;

@@ -2,10 +2,19 @@ import { useRef, useMemo } from 'react';
 import { useTexture } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { useSiteConfig } from '../../../context/SiteConfigContext';
 
+/**
+ * SignSystem Component
+ *
+ * 屋外入口的木牌系统。上方是吊装横木，下方是木牌本体（贴图）。
+ * 木牌大字文字编辑已从编辑面板移除，这里只渲染木牌贴图背景。
+ */
 const SignSystem = (props) => {
     const groupRef = useRef();
-    const signTexture = useTexture('/textures/entrance/sign.webp');
+    const { outdoorContent } = useSiteConfig();
+    const signUrl = outdoorContent?.textures?.sign || '/textures/entrance/sign.webp';
+    const signTexture = useTexture(signUrl);
     const mountTexture = useTexture('/textures/entrance/belka.webp');
 
     // Physics parameters
@@ -52,6 +61,9 @@ const SignSystem = (props) => {
                         depthWrite={false} // Fix for seeing objects behind transparent parts
                     />
                 </mesh>
+
+                {/* 4. THE TEXT (User-editable, overlays sign) */}
+                {/* 木牌大字编辑已移除，不再叠加文字；仅保留贴图本身的图案 */}
             </group>
         </group>
     );

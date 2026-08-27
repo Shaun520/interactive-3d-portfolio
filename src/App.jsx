@@ -9,12 +9,13 @@ import { AudioProvider, useAudio } from './context/AudioManager';
 import { initAudio } from './utils/audioManager';
 import { PerformanceProvider, usePerformance } from './context/PerformanceContext';
 import { SceneProvider, useScene } from './context/SceneContext';
+import { SiteConfigProvider, useSiteConfig, useTheme } from './context/SiteConfigContext';
 import NavigationUI from './components/ui/NavigationUI';
 import GlobalOverlay from './components/ui/GlobalOverlay';
 import ScreenReaderOverlay from './components/ui/ScreenReaderOverlay';
+import ContentEditorPanel from './components/ui/ContentEditorPanel';
 import { useDocumentMeta } from './hooks/useDocumentMeta';
 import posthog from 'posthog-js';
-import { loadSanityData } from './hooks/useSanityData';
 
 // Initialize PostHog
 posthog.init(import.meta.env.VITE_POSTHOG_KEY, {
@@ -97,7 +98,8 @@ const GlobalAudioEnabler = () => {
 // Scene background using corridor wall texture (static, no animation)
 const PaperSceneBackground = () => {
   const { scene } = useThree();
-  const texture = useTexture('/textures/paper-texture.webp');
+  const { assets } = useTheme();
+  const texture = useTexture(assets.paperTexture);
 
   useEffect(() => {
     texture.colorSpace = THREE.SRGBColorSpace;
@@ -109,6 +111,17 @@ const PaperSceneBackground = () => {
   }, [scene, texture]);
 
   return null;
+};
+
+// Scene clear color + fog from theme config (replaces hardcoded #fafafa)
+const SceneThemeBridge = () => {
+  const { colors } = useTheme();
+  return (
+    <>
+      <color attach="background" args={[colors.background]} />
+      <fog attach="fog" args={[colors.fog, 15, 50]} />
+    </>
+  );
 };
 
 // Responsive camera: widen FOV and pull back on narrow viewports to avoid cropping
@@ -154,9 +167,10 @@ function AppContent() {
   const { settings, downgradeTier, tier } = usePerformance();
 
   // Force initialize audio in the background on mount
+  const { outdoorContent } = useSiteConfig();
   useEffect(() => {
-    initAudio();
-  }, []);
+    initAudio(outdoorContent?.music);
+  }, [outdoorContent?.music]);
 
   const handleSceneReady = useCallback(() => {
     requestAnimationFrame(() => {
@@ -189,8 +203,8 @@ function AppContent() {
               dpr={settings.dpr}
               shadows={settings.shadows}
             >
-              <color attach="background" args={['#fafafa']} />
-              <fog attach="fog" args={['#fafafa', 15, 50]} />
+              {/* Theme colors: clear color + fog from site config */}
+              <SceneThemeBridge />
 
               {/* Responsive camera: adjusts FOV/position Z on narrow viewports */}
               <ResponsiveCamera />
@@ -223,6 +237,7 @@ function AppContent() {
               <GlobalOverlay />
               <PaperTransition />
               <ScreenReaderOverlay />
+              <ContentEditorPanel />
             </>
           )}
 
@@ -243,19 +258,18 @@ export default function App() {
   // Preload browser-based images (for standard <img> tags) immediately upon mounting App
   // This ensures they are in the network waterfall during the initial loading phase.
   useEffect(() => {
-    // Eagerly preload Sanity CMS data and images
-    loadSanityData();
-
     const filteredImages = filterTexturesByDevice(IMAGE_ASSETS, supportsHover);
     // console.log(`[Preload] Triggering browser-level image preloads for ${filteredImages.length} assets.`);
     filteredImages.forEach(path => preloadBrowserImage(path));
   }, []);
 
   return (
-    <PerformanceProvider>
-      <AchievementsProvider>
-        <AppContent />
-      </AchievementsProvider>
-    </PerformanceProvider>
+    <SiteConfigProvider>
+      <PerformanceProvider>
+        <AchievementsProvider>
+          <AppContent />
+        </AchievementsProvider>
+      </PerformanceProvider>
+    </SiteConfigProvider>
   );
 }

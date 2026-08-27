@@ -4,6 +4,7 @@ import { useTexture, PositionalAudio } from '@react-three/drei';
 import * as THREE from 'three';
 import gsap from 'gsap';
 import { useAudio } from '../../../context/AudioManager';
+import { useSiteConfig } from '../../../context/SiteConfigContext';
 
 // Global settings for automatic segment doors audio
 const SEGMENT_DOOR_AUDIO_SETTINGS = {
@@ -38,22 +39,23 @@ const SegmentDoors = ({
 
     const { camera } = useThree();
     const { globalVolume, isMuted } = useAudio();
+    const { corridorTextures } = useSiteConfig();
 
     // Load textures
     // Note: User provided specific filenames in corridor/doors/
-    const frameTexture = useTexture('/textures/corridor/doors/frame_sketch.webp');
-    const doorLeftTexture = useTexture('/textures/corridor/doors/doorrleft.webp');
-    const doorRightTexture = useTexture('/textures/corridor/doors/dorright.webp');
-    const handleLeftTexture = useTexture('/textures/corridor/doors/handle_left_sketch.webp');
-    const handleRightTexture = useTexture('/textures/corridor/doors/handle_right_sketch.webp');
-    const doorBackTexture = useTexture('/textures/corridor/doors/door_back.webp');
-    const edgeTexture = useTexture('/textures/corridor/doors/pien.webp');
-    const wallTexture = useTexture('/textures/corridor/wall_texture.webp');
+    const frameTexture = useTexture(corridorTextures?.segFrame || '/textures/corridor/doors/frame_sketch.webp');
+    const doorLeftTexture = useTexture(corridorTextures?.segDoorLeft || '/textures/corridor/doors/doorrleft.webp');
+    const doorRightTexture = useTexture(corridorTextures?.segDoorRight || '/textures/corridor/doors/dorright.webp');
+    const handleLeftTexture = useTexture(corridorTextures?.segHandleLeft || '/textures/corridor/doors/handle_left_sketch.webp');
+    const handleRightTexture = useTexture(corridorTextures?.segHandleRight || '/textures/corridor/doors/handle_right_sketch.webp');
+    const doorBackTexture = useTexture(corridorTextures?.segDoorBack || '/textures/corridor/doors/door_back.webp');
+    const edgeTexture = useTexture(corridorTextures?.segEdge || '/textures/corridor/doors/pien.webp');
+    const wallTexture = useTexture(corridorTextures?.wall || '/textures/corridor/wall_texture.webp');
 
     wallTexture.wrapS = wallTexture.wrapT = THREE.RepeatWrapping;
 
     // Baseboard texture (1582x94 px)
-    const baseboardTexSrc = useTexture('/textures/corridor/texturadoprogow.webp');
+    const baseboardTexSrc = useTexture(corridorTextures?.baseboard || '/textures/corridor/texturadoprogow.webp');
     const NATURAL_TILE_W = (1582 / 94) * 0.15; // ~2.524 units per natural tile
 
     // --- Dimensions from EntranceDoors ---
@@ -149,9 +151,9 @@ const SegmentDoors = ({
     });
 
     // Wall Decorations
-    const whileTrueTexture = useTexture('/textures/corridor/decorations/while_true_loop.webp');
-    const coffeeTexture = useTexture('/textures/corridor/decorations/coffee_debug.webp');
-    const ideaTexture = useTexture('/textures/corridor/decorations/idea_process.webp');
+    const whileTrueTexture = useTexture(corridorTextures?.decorWhileTrue || '/textures/corridor/decorations/while_true_loop.webp');
+    const coffeeTexture = useTexture(corridorTextures?.decorCoffee || '/textures/corridor/decorations/coffee_debug.webp');
+    const ideaTexture = useTexture(corridorTextures?.decorIdea || '/textures/corridor/decorations/idea_process.webp');
 
     return (
         <group position={[position[0], 0, position[2]]}>

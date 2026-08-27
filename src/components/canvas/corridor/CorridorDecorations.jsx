@@ -5,6 +5,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import gsap from 'gsap';
 import '../shaders/RevealMaterial';
 import { isTouchDevice } from '../../../utils/deviceDetect';
+import { useSiteConfig } from '../../../context/SiteConfigContext';
 /**
  * CorridorDecorations - Dekoracje korytarza.
  * 
@@ -320,6 +321,8 @@ const InspectableFrame = ({ frame, wallX, frameTexture, framePaintedTexture, CAB
 
 const CorridorDecorations = ({ segmentLength, zOffset, corridorWidth = 4, corridorHeight = 3.5, zClip = 100000, setCameraOverride }) => {
 
+    const { homeContent, corridorTextures } = useSiteConfig();
+
     const wallX = corridorWidth / 2 - 0.01;
     const floorY = -corridorHeight / 2;
     const ceilingY = corridorHeight / 2;
@@ -327,20 +330,20 @@ const CorridorDecorations = ({ segmentLength, zOffset, corridorWidth = 4, corrid
     // =============================================
     // TEKSTURY DEKORACJI
     // =============================================
-    const frameTexture = useTexture('/textures/corridor/ramkanazdjecieduza.webp');
-    const framePaintedTexture = useTexture('/textures/corridor/ramkanazdjecieduza_painted.webp');
-    const standingFrameTexture = useTexture('/textures/corridor/ramkanazdjeciemala.webp');
-    const treeTexture = useTexture('/textures/corridor/drzewkowdoniczce.webp');
-    const grateTexture = useTexture('/textures/corridor/kratkawentylacyjna.webp');
-    const flowerTexture = useTexture('/textures/corridor/kwiatekwdoniczce.webp');
+    const frameTexture = useTexture(corridorTextures?.frame || '/textures/corridor/ramkanazdjecieduza.webp');
+    const framePaintedTexture = useTexture(corridorTextures?.framePainted || '/textures/corridor/ramkanazdjecieduza_painted.webp');
+    const standingFrameTexture = useTexture(corridorTextures?.standingFrame || '/textures/corridor/ramkanazdjeciemala.webp');
+    const treeTexture = useTexture(corridorTextures?.tree || '/textures/corridor/drzewkowdoniczce.webp');
+    const grateTexture = useTexture(corridorTextures?.grate || '/textures/corridor/kratkawentylacyjna.webp');
+    const flowerTexture = useTexture(corridorTextures?.flower || '/textures/corridor/kwiatekwdoniczce.webp');
 
     // --- Ceiling Lights (punkty światła) ---
     // Tekstury lamp
-    const lampGrilleTexture = useTexture('/textures/corridor/kratanalampy.webp');
+    const lampGrilleTexture = useTexture(corridorTextures?.lampGrille || '/textures/corridor/kratanalampy.webp');
     // lampGrilleTexture.wrapS = lampGrilleTexture.wrapT = THREE.RepeatWrapping; 
     // lampGrilleTexture.repeat.set(1, 1);
 
-    const lampSideTexture = useTexture('/textures/corridor/bokilampy.webp');
+    const lampSideTexture = useTexture(corridorTextures?.lampSide || '/textures/corridor/bokilampy.webp');
     lampSideTexture.wrapS = lampSideTexture.wrapT = THREE.RepeatWrapping;
     // Dopasowanie UV dla długiego boku
     lampSideTexture.repeat.set(1, 1);
@@ -363,15 +366,9 @@ const CorridorDecorations = ({ segmentLength, zOffset, corridorWidth = 4, corrid
     // =============================================
     // RAMKI NA ZDJĘCIA (PICTURE FRAMES)
     // =============================================
-    // Płaskie plane'y na ścianach z teksturą ramki.
-    // Wewnątrz ramki można później dodać plakaty/zdjęcia.
-    //
-    // USTAWIENIA DO RĘCZNEJ REGULACJI:
-    // - z: pozycja Z (gdzie na osi korytarza), obliczana jako zOffset - wartość
-    // - side: 'left' lub 'right'
-    // - width/height: rozmiar ramki
-    // - y: pozycja Y (wysokość na ścianie, 0 = środek)
-    const frames = useMemo(() => [
+    // 壁画配置来自首页内容 homeContent.frames（编辑器「走廊」tab 可改），
+    // 缺省回退到下方 DEFAULT_FRAMES。relZ 为相对段首的 Z 位置。
+    const DEFAULT_FRAMES = [
         {
             z: zOffset - 10,         // Między startem a Gallery (relZ -5 do -15)
             side: 'right',
@@ -379,11 +376,10 @@ const CorridorDecorations = ({ segmentLength, zOffset, corridorWidth = 4, corrid
             height: 2.5 / 1.785,     // Legacy ratio 3200x1792
             y: 0.3,                  // Wysokość na ścianie
             id: 'frame-1',
-            // Custom setup for "rysuneknaobraz1.png"
             image: '/textures/corridor/rysuneknaobraz1.webp',
             imageWidth: 1.1,
             imageHeight: 1.1,
-            offsetFromWall: 0.1, // Przesunięcie bliżej środka korytarza (0.1 unit)
+            offsetFromWall: 0.1,
         },
         {
             z: zOffset - 25,         // Między Gallery a Studio (relZ -20 do -30)
@@ -423,17 +419,34 @@ const CorridorDecorations = ({ segmentLength, zOffset, corridorWidth = 4, corrid
             signatureSize: 0.12,
             signatureColor: '#333333'
         },
-    ], [zOffset]);
+    ];
+
+    // 优先用编辑面板配置的壁画；每帧 relZ → 绝对 z
+    const frames = useMemo(() => {
+        const cfgFrames = homeContent?.frames;
+        const base = (cfgFrames && cfgFrames.length > 0) ? cfgFrames : DEFAULT_FRAMES;
+        return base.map((f) => ({
+            ...f,
+            z: zOffset - (f.relZ !== undefined ? f.relZ : (zOffset - f.z)),
+            width: f.width,
+            height: f.height !== undefined ? f.height : (f.width || 2.5) / 1.785,
+            offsetFromWall: f.offsetFromWall || 0,
+            signatureX: f.signatureX !== undefined ? f.signatureX : ((f.width || 2.5) / 2 - 0.1),
+            signatureY: f.signatureY !== undefined ? f.signatureY : (-(f.height !== undefined ? f.height : (f.width || 2.5) / 1.785) / 2 + 0.15),
+            signatureSize: f.signatureSize || 0.12,
+            signatureColor: f.signatureColor || '#333333',
+        }));
+    }, [zOffset, homeContent]);
 
     // =============================================
     // STOLIK (TABLE)
     // =============================================
-    const woodTexture = useTexture('/textures/corridor/texturadrewnadonozekbiurka.webp');
-    const tableTopTexture = useTexture('/textures/corridor/gorastolika.webp');
+    const woodTexture = useTexture(corridorTextures?.wood || '/textures/corridor/texturadrewnadonozekbiurka.webp');
+    const tableTopTexture = useTexture(corridorTextures?.tableTop || '/textures/corridor/gorastolika.webp');
 
     // Tekstury szafki
-    const cabinetFrontTexture = useTexture('/textures/corridor/szafkaprzod.webp');
-    const cabinetRestTexture = useTexture('/textures/corridor/szafkaprzodgora.webp');
+    const cabinetFrontTexture = useTexture(corridorTextures?.cabinetFront || '/textures/corridor/szafkaprzod.webp');
+    const cabinetRestTexture = useTexture(corridorTextures?.cabinetRest || '/textures/corridor/szafkaprzodgora.webp');
 
     // Klonujemy teksturę dla nóg, żeby ją obrócić (bo user mówi że jest poziomo a ma być pionowo)
     const legTexture = useMemo(() => {

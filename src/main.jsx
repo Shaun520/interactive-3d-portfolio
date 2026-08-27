@@ -1,20 +1,25 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App.jsx'
+import { siteConfig } from './site.config'
 
-// --- Console Signature for Awwwards Judges ---
+// --- Console Signature (from site.config brand.console) ---
 if (typeof window !== 'undefined') {
-  console.log(
-    '%c TOM KING %c PORTFOLIO %c',
-    'background: #111; color: #fff; padding: 5px 10px; font-weight: bold; border-radius: 3px 0 0 3px;',
-    'background: #f33; color: #fff; padding: 5px 10px; font-weight: bold; border-radius: 0 3px 3px 0;',
-    'background: transparent'
-  );
-  console.log(
-    '%cHi Jury! %cCheck out the code quality. Clean console = happy dev. 🚀',
-    'font-weight: bold; color: #f33; font-size: 14px;',
-    'color: #666; font-size: 14px;'
-  );
+  const c = siteConfig.brand.console;
+  if (c) {
+    console.log(
+      `%c ${c.title} %c ${c.subtitle} %c`,
+      'background: #111; color: #fff; padding: 5px 10px; font-weight: bold; border-radius: 3px 0 0 3px;',
+      `background: ${c.color}; color: #fff; padding: 5px 10px; font-weight: bold; border-radius: 0 3px 3px 0;`,
+      'background: transparent'
+    );
+    if (c.message) {
+      console.log(
+        `%c${c.message}`,
+        'font-weight: bold; color: #666; font-size: 14px;'
+      );
+    }
+  }
 }
 
 

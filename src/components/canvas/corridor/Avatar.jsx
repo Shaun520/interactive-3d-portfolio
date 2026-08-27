@@ -2,6 +2,10 @@ import { useRef, useState, useEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { useTexture } from '@react-three/drei';
 import * as THREE from 'three';
+import { useSiteConfig } from '../../../context/SiteConfigContext';
+
+// 默认挥手动画帧（homeContent.avatarFrames 为空时兜底）
+const DEFAULT_FRAMES = Array.from({ length: 9 }, (_, i) => `/textures/corridor/avatar_anim/${i + 1}.webp`);
 
 /**
  * Avatar Component - Hand-drawn sketch style character
@@ -11,8 +15,15 @@ import * as THREE from 'three';
  * - Hand-drawn line style matching entrance
  * - Dodges when camera approaches
  * - Frame-by-frame animation (Boomerang effect: 1-6-1)
+ * 
+ * 帧序列来自首页配置（homeContent.avatarFrames）：
+ * 多帧 = ping-pong 挥手动画；单帧 = 静态头像。
  */
 const Avatar = ({ position = [10, -20, 30] }) => {
+    const { homeContent } = useSiteConfig();
+    const frames = homeContent?.avatarFrames?.length ? homeContent.avatarFrames : DEFAULT_FRAMES;
+    const TOTAL_FRAMES = frames.length;
+
     const meshRef = useRef();
     const groupRef = useRef();
     const [dimensions, setDimensions] = useState({ width: 1.2, height: 2.4 });
@@ -24,8 +35,7 @@ const Avatar = ({ position = [10, -20, 30] }) => {
     const worldPosVec = useRef(new THREE.Vector3());
 
     // --- FRAME-BY-FRAME ANIMATION (PING-PONG) ---
-    const TOTAL_FRAMES = 9;
-    const framePaths = Array.from({ length: TOTAL_FRAMES }, (_, i) => `/textures/corridor/avatar_anim/${i + 1}.webp`);
+    const framePaths = frames;
 
     // Load all texture frames
     const textures = useTexture(framePaths);
@@ -47,6 +57,11 @@ const Avatar = ({ position = [10, -20, 30] }) => {
                 width: baseHeight * aspectRatio,
                 height: baseHeight
             });
+        }
+
+        // 帧数变化时把当前帧钳回有效范围（如从 9 帧删到 1 帧 → 显示第 1 帧）
+        if (currentFrame.current >= textures.length) {
+            currentFrame.current = Math.max(0, textures.length - 1);
         }
 
         // Set initial texture to avoid white flash, but don't bind it declaratively 
@@ -86,13 +101,14 @@ const Avatar = ({ position = [10, -20, 30] }) => {
         groupRef.current.position.y = position[1];
 
         // === FRAME ANIMATION LOGIC (PING-PONG) ===
+        // 单帧 = 静态，无需计时器；多帧才做 ping-pong
         // Using delta for consistent speed regardless of monitor Hz
         const FPS = 20; // Prędkość machania (klatki na sekundę)
         const frameDuration = 1 / FPS;
 
         frameTimer.current += delta;
 
-        if (frameTimer.current >= frameDuration) {
+        if (TOTAL_FRAMES > 1 && frameTimer.current >= frameDuration) {
             frameTimer.current = 0; // Reset timer
 
             // Jesteśmy na ostatniej (od prawej)? To machamy do lewej

@@ -1,5 +1,6 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useScene } from '../../context/SceneContext';
+import { useSiteConfig } from '../../context/SiteConfigContext';
 import gsap from 'gsap';
 import { TextPlugin } from 'gsap/TextPlugin';
 import '../../styles/GlobalOverlay.scss';
@@ -8,6 +9,7 @@ gsap.registerPlugin(TextPlugin);
 
 const GlobalOverlay = () => {
     const { overlayContent, closeOverlay } = useScene();
+    const { rooms } = useSiteConfig();
     const [isVisible, setIsVisible] = useState(false);
     const [animateOpen, setAnimateOpen] = useState(false);
 
@@ -64,8 +66,28 @@ const GlobalOverlay = () => {
 
     const content = overlayContent || cachedContent || dummyGridContent;
 
+    // 实时内容解析：若 overlay 内容带 _src 来源标识（Studio 条目 / About 奖项组），
+    // 从当前 SiteConfigContext 的 rooms 状态实时读取最新文本，编辑面板改动即时反映。
+    // 无 _src（旧调用/兜底）则用传入快照。不触发打开动画（动画 effect 依赖 overlayContent）。
+    const liveContent = useMemo(() => {
+        const src = content?._src;
+        if (!src) return content;
+        const room = rooms.find((r) => r.id === src.roomId);
+        const c = room?.content;
+        if (src.kind === 'item' && c?.items) {
+            // Studio 条目：用最新配置条目覆盖文本字段（纹理/平台字段保留快照，避免重算纹理）
+            const found = c.items.find((it) => it.id === src.id);
+            return found ? { ...content, ...found } : content;
+        }
+        if (src.kind === 'award' && c?.awards?.[src.group]) {
+            // About 奖项组：直接用最新配置的奖项组对象
+            return c.awards[src.group];
+        }
+        return content;
+    }, [content, rooms]);
+
     // Propagate animateOpen state to control CSS transitions
-    return <ContentCard content={content} isOpen={animateOpen} onClose={closeOverlay} isMobile={isMobile} />;
+    return <ContentCard content={liveContent} isOpen={animateOpen} onClose={closeOverlay} isMobile={isMobile} />;
 };
 
 const ContentCard = ({ content, isOpen, onClose, isMobile }) => {
@@ -526,21 +548,23 @@ const ContentCard = ({ content, isOpen, onClose, isMobile }) => {
                                 {content.description}
                             </p>
 
-                            {/* Action Button */}
-                            <div style={{
-                                marginTop: 'auto',
-                                paddingTop: '1rem',
-                                ...getStaggerStyle(400)
-                            }}>
-                                <a
-                                    href={content.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="studio-action-button"
-                                >
-                                    Open Link ↗
-                                </a>
-                            </div>
+                            {/* Action Button（showLink 为 false 时隐藏；缺省显示） */}
+                            {content.showLink !== false && (
+                                <div style={{
+                                    marginTop: 'auto',
+                                    paddingTop: '1rem',
+                                    ...getStaggerStyle(400)
+                                }}>
+                                    <a
+                                        href={content.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="studio-action-button"
+                                    >
+                                        Open Link ↗
+                                    </a>
+                                </div>
+                            )}
                         </>
                     )}
                 </div>

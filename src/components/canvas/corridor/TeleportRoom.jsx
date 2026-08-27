@@ -1,15 +1,15 @@
 import { memo, useEffect, useRef } from 'react';
 import { useThree } from '@react-three/fiber';
 import { useScene } from '../../../context/SceneContext';
+import { resolveDoorZ } from '../../../context/SiteConfigContext';
+import { siteConfig } from '../../../site.config';
 
-// Door positions (Global Z for Segment 0)
-// Calculation: 10 (Start Z) + Relative Z + 2 (Door Offset)
-const DOOR_POSITIONS_Z = {
-    'gallery': -6,   // 10 - 18 + 2
-    'studio': -20,   // 10 - 32 + 2
-    'about': -36,    // 10 - 48 + 2
-    'contact': -50   // 10 - 62 + 2
-};
+// Door positions (Global Z for Segment 0), 由配置 rooms[].relativeZ 计算：
+// Z = 10 (Start Z) + relativeZ + 2 (Door Offset)
+const DOOR_POSITIONS_Z = siteConfig.rooms.reduce((acc, room) => {
+    acc[room.id] = resolveDoorZ(room.relativeZ);
+    return acc;
+}, {});
 
 /**
  * TeleportRoom Component

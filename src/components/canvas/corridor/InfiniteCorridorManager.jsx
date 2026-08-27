@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 
-import CorridorSegment, { SEGMENT_LENGTH } from './CorridorSegment';
+import CorridorSegment, { SEGMENT_LENGTH, SEGMENT_START_Z } from './CorridorSegment';
 
 /**
  * Wrapper to toggle segment visibility based on camera position.
@@ -12,9 +12,9 @@ const SegmentVisibilityWrapper = ({ children, segmentIndex }) => {
     const { camera } = useThree();
 
     // Z bounds for this segment
-    // Segment 0: Z=10 to Z=-70
-    // Segment 1: Z=-70 to Z=-150
-    const startZ = 10 - (segmentIndex * SEGMENT_LENGTH);
+    // Segment 0: Z=SEGMENT_START_Z to Z=SEGMENT_START_Z-SEGMENT_LENGTH
+    // Segment 1: next chunk, etc.
+    const startZ = SEGMENT_START_Z - (segmentIndex * SEGMENT_LENGTH);
     const endZ = startZ - SEGMENT_LENGTH;
 
     useFrame(() => {
@@ -62,7 +62,7 @@ const InfiniteCorridorManager = ({
 
     // Calculate which segment the camera is in
     const getSegmentFromZ = useCallback((z) => {
-        return Math.floor((10 - z) / SEGMENT_LENGTH);
+        return Math.floor((SEGMENT_START_Z - z) / SEGMENT_LENGTH);
     }, []);
 
     // Update active segments based on camera position

@@ -2,6 +2,7 @@ import { useRef, useMemo, useState, useEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Text } from '@react-three/drei';
 import * as THREE from 'three';
+import { useSiteConfig } from '../../../context/SiteConfigContext';
 
 // Local fonts for sketch-style typography (TTF format required by troika)
 const RUBIK_SCRIBBLE_URL = '/fonts/RubikScribble-Regular.ttf';
@@ -19,8 +20,14 @@ let hasPlayedDrawAnimation = false;
  * - Floating micro-animations
  * - Parallax split effect
  * - RESPONSIVE: scales down on mobile
+ * 
+ * 文字来自首页配置（homeContent.title / tagline），逐字母拆开做分裂动画。
  */
 const HeroText = ({ position = [0, 0.3, 0] }) => {
+    const { homeContent } = useSiteConfig();
+    const title = homeContent?.title || 'ITOM';
+    const tagline = homeContent?.tagline || '< creative developer />';
+
     const groupRef = useRef();
     const letterRefs = useRef([]);
     const taglineRefs = useRef([]);
@@ -54,21 +61,52 @@ const HeroText = ({ position = [0, 0.3, 0] }) => {
     // Pre-allocate Vector3 to avoid per-frame garbage collection
     const worldPosVec = useRef(new THREE.Vector3());
 
-    // Letter positions for ITOM split effect
-    const letters = useMemo(() => [
-        { char: 'I', baseX: -0.95, splitDir: -1.6, delay: 0 },
-        { char: 'T', baseX: -0.43, splitDir: -0.6, delay: 0 },
-        { char: 'O', baseX: 0.23, splitDir: 0.6, delay: 0 },
-        { char: 'M', baseX: 0.95, splitDir: 1.8, delay: 0 },
-    ], []);
+    // 标题逐字母：居中排布，分裂方向由中心向外发散（文字长度自适应）
+    const letters = useMemo(() => {
+        const chars = [...title];
+        const spacing = Math.min(0.62, 2.4 / Math.max(chars.length, 1));
+        const center = (chars.length - 1) / 2;
+        return chars.map((char, i) => ({
+            char,
+            baseX: (i - center) * spacing,
+            splitDir: (i - center) * 1.1,
+            delay: 0,
+        }));
+    }, [title]);
 
-    // Tagline words for split effect
-    const taglineWords = useMemo(() => [
-        { text: '<', baseX: -0.85, splitDir: -1.5, delay: 0 },
-        { text: 'creative', baseX: -0.4, splitDir: -0.8, delay: 0 },
-        { text: 'developer', baseX: 0.4, splitDir: 0.8, delay: 0 },
-        { text: '/>', baseX: 0.85, splitDir: 1.5, delay: 0 },
-    ], []);
+    // 副标题按空白拆词：根据每个词的实际宽度动态排布，避免长词重叠
+    const taglineWords = useMemo(() => {
+        const words = tagline.split(/\s+/).filter(Boolean);
+        if (words.length === 0) return [];
+
+        // 估算字符宽度（与下面 Text 的 fontSize / letterSpacing 保持一致）
+        const FONT_SIZE = 0.16;
+        const LETTER_SPACING = 0.04;
+        const AVG_CHAR_WIDTH_RATIO = 0.55; // 字符宽度 ≈ fontSize * 比例
+        const WORD_PADDING = 0.12; // 词与词之间额外留白
+
+        const widths = words.map(
+            (text) => text.length * (FONT_SIZE * AVG_CHAR_WIDTH_RATIO + LETTER_SPACING)
+        );
+
+        // 从左到右累积，确定每个词的中心位置，最后整体居中
+        const totalWidth =
+            widths.reduce((a, b) => a + b, 0) + (words.length - 1) * WORD_PADDING;
+        let cursor = -totalWidth / 2;
+        const centers = widths.map((w) => {
+            const center = cursor + w / 2;
+            cursor += w + WORD_PADDING;
+            return center;
+        });
+
+        return words.map((text, i) => ({
+            text,
+            baseX: centers[i],
+            // 分裂方向按相对中心的归一化位置：左边向左、右边向右
+            splitDir: Math.sign(centers[i] || 1) * 0.8,
+            delay: 0,
+        }));
+    }, [tagline]);
 
     // Animation loop
     useFrame((state, delta) => {
@@ -134,7 +172,7 @@ const HeroText = ({ position = [0, 0.3, 0] }) => {
             {/* ITOM Letters - Rubik Scribble font with fade-in animation */}
             {letters.map((letter, i) => (
                 <Text
-                    key={letter.char}
+                    key={`${i}-${letter.char}`}
                     ref={(el) => (letterRefs.current[i] = el)}
                     position={[letter.baseX, 0.2, 0]}
                     fontSize={0.9}
@@ -153,7 +191,7 @@ const HeroText = ({ position = [0, 0.3, 0] }) => {
             {/* Tagline words - Cabin Sketch font with fade-in animation */}
             {taglineWords.map((word, i) => (
                 <Text
-                    key={word.text}
+                    key={`${i}-${word.text}`}
                     ref={(el) => (taglineRefs.current[i] = el)}
                     position={[word.baseX, -0.55, 0.3]}
                     fontSize={0.16}

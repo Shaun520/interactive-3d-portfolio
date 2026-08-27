@@ -1,12 +1,8 @@
-import { useRef, useState, Suspense } from 'react';
+import { useRef, useState, useMemo, Suspense } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 
-// Eagerly import all room components
-import GalleryRoom from '../rooms/Gallery/GalleryRoom';
-import StudioRoom from '../rooms/Studio/StudioRoom';
-import AboutRoom from '../rooms/About/AboutRoom';
-import ContactRoom from '../rooms/Contact/ContactRoom';
-import { isSanityDataLoaded } from '../../../hooks/useSanityData';
+import { getRoomComponent } from '../../../config/rooms/registry';
+import { useRooms } from '../../../context/SiteConfigContext';
 
 /**
  * RoomWarmup Component
@@ -25,14 +21,21 @@ const RoomWarmup = ({ onWarmupComplete, isLowTier }) => {
     const completeFired = useRef(false);
     const { gl, scene, camera } = useThree();
 
+    // 预热房间清单：遍历所有已启用房间，错落排布在屏幕下方 500 单位处
+    // 用 useRooms() 拿到可变 content，与实时编辑保持同步
+    const rooms = useRooms();
+    const warmupRooms = useMemo(() => rooms.map((room, i) => ({
+        id: room.id,
+        component: getRoomComponent(room.type),
+        content: room.content,
+        position: [i % 2 === 0 ? -20 : 20, 0, -Math.floor(i / 2) * 50],
+    })), [rooms]);
+
     // Wait for rooms to render a few frames, then compile and unmount
     const warmupStart = useRef(performance.now());
 
     useFrame(() => {
         if (isDone || completeFired.current) return;
-
-        // Wait until Sanity data is loaded before starting warmup
-        if (!isSanityDataLoaded()) return;
 
         frameCount.current++;
 
@@ -85,27 +88,14 @@ const RoomWarmup = ({ onWarmupComplete, isLowTier }) => {
 
     return (
         <group position={[0, -500, 0]}>
-            {/* Mount all rooms in Suspense - positioned far below camera */}
-            <Suspense fallback={null}>
-                <group position={[-20, 0, 0]}>
-                    <GalleryRoom showRoom={true} onReady={noop} isExiting={false} isWarmup={true} />
-                </group>
-            </Suspense>
-            <Suspense fallback={null}>
-                <group position={[20, 0, 0]}>
-                    <StudioRoom showRoom={true} onReady={noop} isExiting={false} isWarmup={true} />
-                </group>
-            </Suspense>
-            <Suspense fallback={null}>
-                <group position={[-20, 0, -50]}>
-                    <AboutRoom showRoom={true} onReady={noop} isExiting={false} isWarmup={true} />
-                </group>
-            </Suspense>
-            <Suspense fallback={null}>
-                <group position={[20, 0, -50]}>
-                    <ContactRoom showRoom={true} onReady={noop} isExiting={false} isWarmup={true} />
-                </group>
-            </Suspense>
+            {/* Mount all configured rooms in Suspense - positioned far below camera */}
+            {warmupRooms.map((room) => (
+                <Suspense fallback={null} key={`warmup-${room.id}`}>
+                    <group position={room.position}>
+                        <room.component showRoom={true} onReady={noop} isExiting={false} isWarmup={true} content={room.content} />
+                    </group>
+                </Suspense>
+            ))}
         </group>
     );
 };

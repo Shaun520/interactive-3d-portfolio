@@ -1,13 +1,13 @@
 import { useMemo, memo, Suspense, useEffect } from 'react';
-import { Text } from '@react-three/drei';
 import { useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 
-// Eagerly import room components - textures are preloaded during the preloader phase
-import GalleryRoom from '../rooms/Gallery/GalleryRoom';
-import StudioRoom from '../rooms/Studio/StudioRoom';
-import AboutRoom from '../rooms/About/AboutRoom';
-import ContactRoom from '../rooms/Contact/ContactRoom';
+import { getRoomComponent } from '../../../config/rooms/registry';
+import { siteConfig } from '../../../site.config';
+import { useRooms } from '../../../context/SiteConfigContext';
+
+// 这些内置房间组件内部会自行调用 onReady，RoomInterior 不需要代调
+const SELF_READY_TYPES = ['gallery', 'studio', 'about', 'contact'];
 
 // Room configurations
 const ROOM_CONFIG = {
@@ -19,13 +19,6 @@ const ROOM_CONFIG = {
     roomDepth: 25
 };
 
-const SUBTITLES = {
-    'THE GALLERY': 'Explore my creative projects',
-    'THE STUDIO': 'Watch behind the scenes',
-    'DEV DIARY': 'My development journey',
-    "LET'S CONNECT": 'Get in touch with me'
-};
-
 // Naturalny kafelek listwy: 1582x94px przy wysokości 0.15 → ~2.524 units szerokości
 const NATURAL_TILE_W = (1582 / 94) * 0.15;
 
@@ -33,18 +26,23 @@ const NATURAL_TILE_W = (1582 / 94) * 0.15;
  * RoomInterior Component
  *
  * Memoized room geometry to prevent re-renders and improve performance.
- * Contains corridor + giant room at the end.
+ * Contains corridor + room at the end. Room rendering goes through the
+ * room registry (rooms[].type → component), so rooms are pluggable.
  */
 const RoomInterior = memo(({ label, showRoom, onReady, isExiting }) => {
-    const { corridorWidth, corridorHeight, corridorDepth, roomWidth, roomHeight, roomDepth } = ROOM_CONFIG;
+    const { corridorWidth, corridorHeight, corridorDepth } = ROOM_CONFIG;
     const halfDepth = corridorDepth / 2;
-    const roomZ = -corridorDepth - roomDepth / 2;
+
+    // 当前房间配置（由门 label 反查 rooms，rooms[].content 可变，实时编辑会反映到这里）
+    const rooms = useRooms();
+    const room = useMemo(() => rooms.find(r => r.label === label) || { type: 'generic', subtitle: '' }, [rooms, label]);
+    const RoomComponent = useMemo(() => getRoomComponent(room.type), [room.type]);
 
     // Load corridor textures
-    const floorTexSrc = useTexture('/textures/corridor/kawalekpodlogi.webp');
-    const wallTexSrc = useTexture('/textures/corridor/wall_texture.webp');
-    const ceilingTexSrc = useTexture('/textures/corridor/ceiling_texture.webp');
-    const bbTexSrc = useTexture('/textures/corridor/texturadoprogow.webp');
+    const floorTexSrc = useTexture(siteConfig.theme.assets.floorTexture);
+    const wallTexSrc = useTexture(siteConfig.theme.assets.wallTexture);
+    const ceilingTexSrc = useTexture(siteConfig.theme.assets.ceilingTexture);
+    const bbTexSrc = useTexture(siteConfig.theme.assets.baseboardTexture);
 
     // Memoize textured materials for mini-corridor
     const materials = useMemo(() => {
@@ -76,38 +74,38 @@ const RoomInterior = memo(({ label, showRoom, onReady, isExiting }) => {
         const bbLeft = bbTexSrc.clone();
         bbLeft.needsUpdate = true;
         bbLeft.wrapS = bbLeft.wrapT = THREE.RepeatWrapping;
+        bbLeft.rotation = 0;
+        bbLeft.offset.set(0, 0);
         bbLeft.repeat.set(corridorDepth / NATURAL_TILE_W, 1);
 
         // Baseboard right
         const bbRight = bbTexSrc.clone();
         bbRight.needsUpdate = true;
         bbRight.wrapS = bbRight.wrapT = THREE.RepeatWrapping;
+        bbRight.rotation = 0;
+        bbRight.offset.set(0, 0);
         bbRight.repeat.set(corridorDepth / NATURAL_TILE_W, 1);
 
         return {
-            corridorFloor: new THREE.MeshBasicMaterial({ color: '#e0e0e0',  map: floorTex, side: THREE.DoubleSide }),
-            corridorWallL: new THREE.MeshBasicMaterial({ color: '#e0e0e0',  map: wallTexL, side: THREE.DoubleSide }),
-            corridorWallR: new THREE.MeshBasicMaterial({ color: '#e0e0e0',  map: wallTexR, side: THREE.DoubleSide }),
-            corridorCeiling: new THREE.MeshBasicMaterial({ color: '#e0e0e0',  map: ceilTex, side: THREE.DoubleSide }),
-            bbLeft: new THREE.MeshBasicMaterial({ color: '#e0e0e0',  map: bbLeft, side: THREE.DoubleSide }),
-            bbRight: new THREE.MeshBasicMaterial({ color: '#e0e0e0',  map: bbRight, side: THREE.DoubleSide }),
-            threshold: new THREE.MeshBasicMaterial({ color: '#e0e0e0', 
+            corridorFloor: new THREE.MeshBasicMaterial({ color: '#e0e0e0', map: floorTex, side: THREE.DoubleSide }),
+            corridorWallL: new THREE.MeshBasicMaterial({ color: '#e0e0e0', map: wallTexL, side: THREE.DoubleSide }),
+            corridorWallR: new THREE.MeshBasicMaterial({ color: '#e0e0e0', map: wallTexR, side: THREE.DoubleSide }),
+            corridorCeiling: new THREE.MeshBasicMaterial({ color: '#e0e0e0', map: ceilTex, side: THREE.DoubleSide }),
+            bbLeft: new THREE.MeshBasicMaterial({ color: '#e0e0e0', map: bbLeft, side: THREE.DoubleSide }),
+            bbRight: new THREE.MeshBasicMaterial({ color: '#e0e0e0', map: bbRight, side: THREE.DoubleSide }),
+            threshold: new THREE.MeshBasicMaterial({ color: '#e0e0e0',
                 map: (() => {
                     const t = bbTexSrc.clone();
                     t.needsUpdate = true;
                     t.wrapS = t.wrapT = THREE.RepeatWrapping;
+                    t.rotation = 0;
+                    t.offset.set(0, 0);
                     t.repeat.set(corridorWidth / NATURAL_TILE_W, 1);
                     return t; })(),
-
                 side: THREE.DoubleSide
             }),
-            // Room materials (keep flat for rooms that have their own content)
-            roomFloor: new THREE.MeshBasicMaterial({ color: '#e5e5e5', side: THREE.DoubleSide }),
-            roomCeiling: new THREE.MeshBasicMaterial({ color: '#fafafa', side: THREE.DoubleSide }),
-            roomWall: new THREE.MeshBasicMaterial({ color: '#f0f0f0', side: THREE.DoubleSide }),
-            roomBackWall: new THREE.MeshBasicMaterial({ color: '#f5f5f5', side: THREE.DoubleSide }),
         };
-    }, [floorTexSrc, wallTexSrc, ceilingTexSrc, bbTexSrc]);
+    }, [floorTexSrc, wallTexSrc, ceilingTexSrc, bbTexSrc, corridorDepth, corridorWidth, corridorHeight]);
 
     // Memoize geometries
     const geometries = useMemo(() => ({
@@ -115,19 +113,14 @@ const RoomInterior = memo(({ label, showRoom, onReady, isExiting }) => {
         corridorFloorCeiling: new THREE.PlaneGeometry(corridorWidth, corridorDepth),
         corridorBaseboard: new THREE.PlaneGeometry(corridorDepth, 0.15),
         threshold: new THREE.PlaneGeometry(corridorWidth, 0.15),
-        roomFloorCeiling: new THREE.PlaneGeometry(roomWidth, roomDepth),
-        roomSideWall: new THREE.PlaneGeometry(roomDepth, roomHeight),
-        roomBackWall: new THREE.PlaneGeometry(roomWidth, roomHeight)
-    }), []);
+    }), [corridorDepth, corridorHeight, corridorWidth]);
 
-    const isGallery = label === 'THE GALLERY';
-
-    // Trigger onReady for generic rooms (which don't have their own component to do it)
+    // Trigger onReady for rooms that don't self-signal (generic & custom non-ready types)
     useEffect(() => {
-        if (showRoom && !['THE GALLERY', 'THE STUDIO', 'THE ABOUT', "LET'S CONNECT"].includes(label)) {
+        if (showRoom && !SELF_READY_TYPES.includes(room.type)) {
             onReady?.();
         }
-    }, [showRoom, label, onReady]);
+    }, [showRoom, room.type, onReady]);
 
     return (
         <group position={[0, -0.149, 0]}>
@@ -189,116 +182,14 @@ const RoomInterior = memo(({ label, showRoom, onReady, isExiting }) => {
             />
 
             {/* === ROOM CONTENT === */}
+            {/* 统一挂载点：所有房间组件都相对「房间入口」布局（见 GenericRoom 说明） */}
             {showRoom && (
                 <group>
-                    {isGallery ? (
-                        // === NEW GALLERY ROOM ===
-                        // Positioned at the end of the corridor
-                        <group position={[0, -0.5, -corridorDepth]}>
-                            <Suspense fallback={null}>
-                                <GalleryRoom showRoom={showRoom} onReady={onReady} isExiting={isExiting} />
-                            </Suspense>
-                        </group>
-                    ) : label === 'THE STUDIO' ? (
-                        // === NEW STUDIO ROOM ===
-                        <group position={[0, -0.5, -corridorDepth]}>
-                            <Suspense fallback={null}>
-                                <StudioRoom showRoom={showRoom} onReady={onReady} isExiting={isExiting} />
-                            </Suspense>
-                        </group>
-                    ) : label === 'THE ABOUT' ? (
-                        // === NEW ABOUT ROOM ===
-                        <group position={[0, -0.5, -corridorDepth]}>
-                            <Suspense fallback={null}>
-                                <AboutRoom showRoom={showRoom} onReady={onReady} isExiting={isExiting} />
-                            </Suspense>
-                        </group>
-                    ) : label === "LET'S CONNECT" ? (
-                        // === NEW CONTACT ROOM ===
-                        <group position={[0, -0.5, -corridorDepth]}>
-                            <Suspense fallback={null}>
-                                <ContactRoom showRoom={showRoom} onReady={onReady} isExiting={isExiting} />
-                            </Suspense>
-                        </group>
-                    ) : (
-                        // === DEFAULT GENERIC ROOM (For other sections) ===
-                        <group position={[0, roomHeight / 2 - corridorHeight / 2, roomZ]}>
-                            {/* Floor */}
-                            <mesh
-                                position={[0, -roomHeight / 2, 0]}
-                                rotation={[-Math.PI / 2, 0, 0]}
-                                geometry={geometries.roomFloorCeiling}
-                                material={materials.roomFloor}
-                            />
-
-                            {/* Floor grid */}
-                            <gridHelper
-                                args={[Math.min(roomWidth, roomDepth), 20, '#cccccc', '#dddddd']}
-                                position={[0, -roomHeight / 2 + 0.01, 0]}
-                            />
-
-                            {/* Ceiling */}
-                            <mesh
-                                position={[0, roomHeight / 2, 0]}
-                                rotation={[Math.PI / 2, 0, 0]}
-                                geometry={geometries.roomFloorCeiling}
-                                material={materials.roomCeiling}
-                            />
-
-                            {/* Back wall */}
-                            <mesh
-                                position={[0, 0, -roomDepth / 2]}
-                                geometry={geometries.roomBackWall}
-                                material={materials.roomBackWall}
-                            />
-
-                            {/* Left wall */}
-                            <mesh
-                                position={[-roomWidth / 2, 0, 0]}
-                                rotation={[0, Math.PI / 2, 0]}
-                                geometry={geometries.roomSideWall}
-                                material={materials.roomWall}
-                            />
-
-                            {/* Right wall */}
-                            <mesh
-                                position={[roomWidth / 2, 0, 0]}
-                                rotation={[0, -Math.PI / 2, 0]}
-                                geometry={geometries.roomSideWall}
-                                material={materials.roomWall}
-                            />
-
-                            {/* Title */}
-                            <Text
-                                position={[0, 2, -roomDepth / 2 + 2]}
-                                fontSize={4}
-                                color="#1a1a1a"
-                                anchorX="center"
-                                anchorY="middle"
-                                maxWidth={roomWidth * 0.8}
-                                textAlign="center"
-                            >
-                                {label}
-                            </Text>
-
-                            {/* Subtitle */}
-                            <Text
-                                position={[0, -1, -roomDepth / 2 + 2]}
-                                fontSize={0.8}
-                                color="#666666"
-                                anchorX="center"
-                                anchorY="middle"
-                                maxWidth={roomWidth * 0.7}
-                                textAlign="center"
-                            >
-                                {SUBTITLES[label] || ''}
-                            </Text>
-
-                            {/* Lighting - WYLACZONE */}
-                            {/* <pointLight position={[0, roomHeight / 2 - 2, 0]} intensity={1} distance={40} color="#ffffff" /> */}
-                            {/* <pointLight position={[0, 0, -roomDepth / 4]} intensity={0.5} distance={30} color="#fffaf0" /> */}
-                        </group>
-                    )}
+                    <group position={[0, -0.5, -corridorDepth]}>
+                        <Suspense fallback={null}>
+                            <RoomComponent showRoom={showRoom} onReady={onReady} isExiting={isExiting} content={room.content} />
+                        </Suspense>
+                    </group>
                 </group>
             )}
         </group>
