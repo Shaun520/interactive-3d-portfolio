@@ -24,8 +24,6 @@ Welcome to the open-source repository of **Tomasz "ITom" Szmajda's** interactive
 
 https://github.com/user-attachments/assets/af6b388c-8bfe-4bcb-8b81-6dac3aa41221
 
-*If the embedded player does not render, [download the video](media/promo.mp4).*
-
 ---
 
 ## 🚀 Key Performance Architectures (2026 Standards)
