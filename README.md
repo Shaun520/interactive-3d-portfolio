@@ -22,7 +22,9 @@ Welcome to the open-source repository of **Tomasz "ITom" Szmajda's** interactive
 
 ## 🎬 Promo Video
 
-[![Promo Video](media/promo-poster.webp)](https://github.com/Shaun520/interactive-3d-portfolio/raw/main/media/promo.mp4)
+https://github.com/user-attachments/assets/af6b388c-8bfe-4bcb-8b81-6dac3aa41221
+
+*If the embedded player does not render, [download the video](media/promo.mp4).*
 
 ---
 
