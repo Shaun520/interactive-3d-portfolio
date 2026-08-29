@@ -23,8 +23,8 @@ Welcome to the open-source repository of **Tomasz "ITom" Szmajda's** interactive
 ## 🎬 Promo Video
 
 <video controls width="100%">
-  <source src="media/promo.mp4" type="video/mp4" />
-  Your browser does not support the video tag. <a href="media/promo.mp4">Download the video</a>.
+  <source src="https://raw.githubusercontent.com/Shaun520/interactive-3d-portfolio/main/media/promo.mp4" type="video/mp4" />
+  Your browser does not support the video tag. <a href="https://github.com/Shaun520/interactive-3d-portfolio/raw/main/media/promo.mp4">Download the video</a>.
 </video>
 
 ---
