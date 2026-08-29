@@ -5,18 +5,14 @@ import * as THREE from 'three';
 import { useSiteConfig } from '../../../context/SiteConfigContext';
 
 // Local fonts for sketch-style typography (TTF format required by troika)
-const RUBIK_SCRIBBLE_URL = '/fonts/RubikScribble-Regular.ttf';
-const CABIN_SKETCH_URL = '/fonts/CabinSketch-Regular.ttf';
-
-// Global flag - draw animation only happens ONCE per page load
-let hasPlayedDrawAnimation = false;
+// 字体现从全局选择按内容自动判断（fontForText），见下方 useSiteConfig()
 
 /**
  * HeroText Component - Hand-drawn Style with Sketch Fonts
  * 
  * WOW Effects for Awwwards SOTD:
- * - ITOM in Rubik Scribble font (splits into letters during scroll)
- * - Creative developer in Cabin Sketch font (also splits)
+ * - ITOM in selected English font (splits into letters during scroll)
+ * - Creative developer in selected English font (also splits)
  * - Floating micro-animations
  * - Parallax split effect
  * - RESPONSIVE: scales down on mobile
@@ -24,7 +20,7 @@ let hasPlayedDrawAnimation = false;
  * 文字来自首页配置（homeContent.title / tagline），逐字母拆开做分裂动画。
  */
 const HeroText = ({ position = [0, 0.3, 0] }) => {
-    const { homeContent } = useSiteConfig();
+    const { homeContent, fontForText } = useSiteConfig();
     const title = homeContent?.title || 'ITOM';
     const tagline = homeContent?.tagline || '< creative developer />';
 
@@ -179,7 +175,7 @@ const HeroText = ({ position = [0, 0.3, 0] }) => {
                     ref={(el) => (letterRefs.current[i] = el)}
                     position={[letter.baseX, 0.2, 0]}
                     fontSize={0.9}
-                    font={RUBIK_SCRIBBLE_URL}
+                    font={fontForText(title)}
                     color="#ffffff"
                     outlineWidth={0.012}
                     outlineColor="#1a1a1a"
@@ -198,7 +194,7 @@ const HeroText = ({ position = [0, 0.3, 0] }) => {
                     ref={(el) => (taglineRefs.current[i] = el)}
                     position={[word.baseX, -0.55, 0.3]}
                     fontSize={0.16}
-                    font={CABIN_SKETCH_URL}
+                    font={fontForText(tagline)}
                     color="#555555"
                     anchorX="center"
                     anchorY="middle"

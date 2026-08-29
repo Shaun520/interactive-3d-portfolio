@@ -2,6 +2,7 @@ import { useRef, useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Text } from '@react-three/drei';
 import * as THREE from 'three';
+import { useSiteConfig } from '../../../../context/SiteConfigContext';
 
 // Reusable Vector3 to avoid allocations in useFrame
 const _worldPos = new THREE.Vector3();
@@ -28,6 +29,7 @@ const StoryMilestone = ({
     type = "intro",  // intro, awards, journey, skills
     children
 }) => {
+    const { fontForText } = useSiteConfig();
     const groupRef = useRef();
 
     // Track opacity for smooth transitions
@@ -167,7 +169,7 @@ const StoryMilestone = ({
                 color={styles.titleColor}
                 anchorX="center"
                 anchorY="middle"
-                font="/fonts/CabinSketch-Bold.ttf"
+                font={fontForText(title)}
                 fillOpacity={0}
             >
                 {title}
@@ -182,7 +184,7 @@ const StoryMilestone = ({
                     color={styles.subtitleColor}
                     anchorX="center"
                     anchorY="middle"
-                    font="/fonts/CabinSketch-Regular.ttf"
+                    font={fontForText(`${subtitle}`)}
                     fillOpacity={0}
                 >
                     {subtitle}

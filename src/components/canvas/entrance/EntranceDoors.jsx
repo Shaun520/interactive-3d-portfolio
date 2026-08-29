@@ -9,8 +9,7 @@ import { useAchievements } from '../../../context/AchievementsContext';
 import { useSiteConfig } from '../../../context/SiteConfigContext';
 import { isTouchDevice } from '../../../utils/deviceDetect';
 
-// Use same font as App.jsx preload (Inter) - works reliably
-const FONT_URL = 'https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hjp-Ek-_EeA.woff';
+// 字体按内容自动选择（fontForText）：中文用中文字体、英文用英文字体
 
 
 
@@ -44,7 +43,7 @@ const EntranceDoors = ({
     const windowAvatarRef = useRef();
     const { camera } = useThree();
     const { unlockAchievement } = useAchievements();
-    const { outdoorContent } = useSiteConfig();
+    const { outdoorContent, fontForText } = useSiteConfig();
     // 屋外贴图：编辑面板可改，缺省回退
     const signUrl = outdoorContent?.textures?.sign || '/textures/entrance/sign.webp';
     const frameUrl = outdoorContent?.textures?.frame || '/textures/doors/frame_sketch.webp';
@@ -907,9 +906,11 @@ const EntranceDoors = ({
                         color="#1a1a1a"
                         anchorX="center"
                         anchorY="middle"
-                        font={FONT_URL}
+                        font={fontForText(duckQuote)}
                         maxWidth={1.4}
                         textAlign="center"
+                        // 长 CJK 串（如中文）必须强制按字断开，否则会横向撑爆气泡
+                        overflowWrap={/[\u3000-\u303f\u3400-\u9fff\uff00-\uffef]/.test(duckQuote || '') ? 'break-word' : 'normal'}
                         visible={isDuckSpeaking} // Toggle visibility instead of mounting/unmounting
                     >
                         {duckQuote || " "}
@@ -960,7 +961,7 @@ const EntranceDoors = ({
                 color="#1a1a1a"
                 anchorX="center"
                 anchorY="middle"
-                font="/fonts/CabinSketch-Bold.ttf"
+                font={fontForText(bugFixedText)}
                 outlineWidth={0.015}
                 outlineColor="#ffffff"
                 clipRect={[-1, -0.5, -1 + (clipProgress * 2.5), 0.5]}

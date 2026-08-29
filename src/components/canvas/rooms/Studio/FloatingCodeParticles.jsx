@@ -2,6 +2,7 @@ import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Text } from '@react-three/drei';
 import * as THREE from 'three';
+import { useSiteConfig } from '../../../../context/SiteConfigContext';
 
 // ============================================
 // CONFIG
@@ -105,6 +106,7 @@ const generateParticles = () => {
 // Main component - receives REFS from parent for smooth animation
 // fallOffsetRef is now VELOCITY (fallSpeed), not cumulative offset!
 const FloatingCodeParticles = ({ towerRotationRef, fallOffsetRef }) => {
+    const { fontForText } = useSiteConfig();
     const particles = useMemo(() => generateParticles(), []);
     const meshRefs = useRef([]);
 
@@ -206,7 +208,7 @@ const FloatingCodeParticles = ({ towerRotationRef, fallOffsetRef }) => {
                     anchorX="center"
                     anchorY="middle"
                     fillOpacity={particle.opacity}
-                    font="/fonts/CabinSketch-Bold.ttf"
+                    font={fontForText(particle.symbol.text)}
                 >
                     {particle.symbol.text}
                 </Text>

@@ -9,7 +9,7 @@ gsap.registerPlugin(TextPlugin);
 
 const GlobalOverlay = () => {
     const { overlayContent, closeOverlay } = useScene();
-    const { rooms } = useSiteConfig();
+    const { rooms, domCss } = useSiteConfig();
     const [isVisible, setIsVisible] = useState(false);
     const [animateOpen, setAnimateOpen] = useState(false);
 
@@ -91,9 +91,15 @@ const GlobalOverlay = () => {
 };
 
 const ContentCard = ({ content, isOpen, onClose, isMobile }) => {
+    const { domCss, fontForDom } = useSiteConfig();
     if (!content) return null;
 
     const label = content.platformConfig?.label || 'Content';
+
+    // 标题/描述/日期按内容自动选字体：英文 → 英文字体，中文 → 中文字体
+    const titleFont = fontForDom(content.title);
+    const descFont = fontForDom(content.description);
+    const dateFont = fontForDom(content.date || label);
 
     // GSAP TextPlugin typing effect for description
     const descriptionRef = useRef(null);
@@ -121,6 +127,8 @@ const ContentCard = ({ content, isOpen, onClose, isMobile }) => {
     const dragStartScroll = useRef(0);
     const [scrollThumbTop, setScrollThumbTop] = useState(0);
     const [showScrollbar, setShowScrollbar] = useState(false);
+    // 证书放大查看弹层：存放当前放大的证书条目（image / label）
+    const [zoomItem, setZoomItem] = useState(null);
 
     // Update thumb position based on scroll
     const updateThumbPosition = useCallback(() => {
@@ -214,6 +222,18 @@ const ContentCard = ({ content, isOpen, onClose, isMobile }) => {
         const { scrollHeight, clientHeight } = el;
         el.scrollTop = ratio * (scrollHeight - clientHeight);
     }, []);
+
+    // 证书卡片点击：依据条目 clickAction 决定「放大查看证书图」或「跳转颁奖方链接」
+    const handleCertificateClick = useCallback((item) => {
+        if (item.clickAction === 'zoom') {
+            // 放大查看：需要图片
+            if (item.image) setZoomItem(item);
+            else window.open(item.url || content?.url || '#', '_blank');
+            return;
+        }
+        // 默认 / link：跳转颁奖方链接
+        window.open(item.url || content?.url || '#', '_blank');
+    }, [content]);
 
     const handleBackdropClick = (e) => {
         // Only close if clicking the wrapper itself (which acts as backdrop here)
@@ -330,7 +350,7 @@ const ContentCard = ({ content, isOpen, onClose, isMobile }) => {
                         display: 'flex',
                         flexDirection: 'column',
                         gap: '1.2rem',
-                        fontFamily: "'Cabin Sketch', cursive", // Hand-drawn vibe
+                        fontFamily: domCss, // Hand-drawn vibe
                         pointerEvents: 'auto', // Re-enable clicks for the card
                         ...cardStyle,
                         // Override styles for grid layout to be centered and wider
@@ -411,7 +431,7 @@ const ContentCard = ({ content, isOpen, onClose, isMobile }) => {
                                 margin: 0,
                                 lineHeight: 1.1,
                                 fontWeight: 800,
-                                fontFamily: "'Rubik Scribble', cursive", // Clean, bold
+                                fontFamily: titleFont, // 按内容自动选英/中字体
                             }}>
                                 {content.title}
                             </h2>
@@ -460,7 +480,7 @@ const ContentCard = ({ content, isOpen, onClose, isMobile }) => {
                                     }}
                                         onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-5px)'}
                                         onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-                                        onClick={() => window.open(item.url || content.url || '#', '_blank')}
+                                        onClick={(e) => { e.stopPropagation(); handleCertificateClick(item); }}
                                     >
                                         <div style={{
                                             position: 'relative',
@@ -490,7 +510,7 @@ const ContentCard = ({ content, isOpen, onClose, isMobile }) => {
                                             <h4 style={{ margin: '0 0 0.4rem 0', fontSize: '1.2rem', fontWeight: 700, fontFamily: "'Rubik Scribble', cursive" }}>
                                                 {item.label}
                                             </h4>
-                                            <span style={{ fontSize: '1.1rem', color: '#4a4a4a', fontFamily: "'Cabin Sketch', cursive", fontWeight: 700 }}>
+                                            <span style={{ fontSize: '1.1rem', color: '#4a4a4a', fontFamily: domCss, fontWeight: 700 }}>
                                                 {item.date}
                                             </span>
                                         </div>
@@ -530,7 +550,7 @@ const ContentCard = ({ content, isOpen, onClose, isMobile }) => {
                                 paddingBottom: '1rem',
                                 ...getStaggerStyle(200)
                             }}>
-                                <strong>{content.date}</strong>
+                                <strong style={{ fontFamily: dateFont }}>{content.date}</strong>
                                 {content.views && <span>{content.views} views</span>}
                             </div>
 
@@ -542,6 +562,7 @@ const ContentCard = ({ content, isOpen, onClose, isMobile }) => {
                                 color: '#333',
                                 fontSize: '0.95rem',
                                 margin: 0,
+                                fontFamily: descFont, // 按内容自动选英/中字体
                                 minHeight: '80px', // Prevent layout jump while typing
                                 ...getStaggerStyle(300)
                             }}>
@@ -569,6 +590,36 @@ const ContentCard = ({ content, isOpen, onClose, isMobile }) => {
                     )}
                 </div>
             </div>
+
+            {/* 证书放大查看弹层（lightbox）：点击证书选择「放大查看」时显示 */}
+            {zoomItem && (
+                <div
+                    className="certificate-zoom-overlay"
+                    onClick={() => setZoomItem(null)}
+                >
+                    <div className="certificate-zoom-card" onClick={(e) => e.stopPropagation()}>
+                        <button
+                            className="certificate-zoom-close"
+                            onClick={() => setZoomItem(null)}
+                            aria-label="关闭"
+                        >
+                            ×
+                        </button>
+                        <img src={zoomItem.image} alt={zoomItem.label || '证书'} />
+                        {zoomItem.label && <div className="certificate-zoom-title">{zoomItem.label}</div>}
+                        {zoomItem.url && (
+                            <a
+                                href={zoomItem.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="certificate-zoom-link"
+                            >
+                                前往颁奖方链接 ↗
+                            </a>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

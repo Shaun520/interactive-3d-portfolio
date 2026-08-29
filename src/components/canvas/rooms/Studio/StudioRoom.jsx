@@ -131,7 +131,7 @@ const StudioRoom = ({ showRoom, onReady, isExiting, isWarmup, content }) => {
     const activeContent = useMemo(() => buildStudioContent(content?.items), [content]);
 
     // 编辑面板「聚焦条目 id」：选择条目时把监视器塔定位到对应监视器
-    const { studioFocusId } = useSiteConfig();
+    const { studioFocusId, setPreviewSelectedId } = useSiteConfig();
 
     const audioRef = useRef();
     useEffect(() => {
@@ -411,6 +411,8 @@ const StudioRoom = ({ showRoom, onReady, isExiting, isWarmup, content }) => {
 
         setIsAnimating(true);
         setSelectedMonitor(item);
+        // 仅同步右侧编辑区选中（不影响转塔定位、不触发聚焦边框）
+        if (item && item.id) setPreviewSelectedId(item.id);
         rotationVelocity.current = 0;
 
         unlockAchievement('studio_interact');
@@ -500,7 +502,7 @@ const StudioRoom = ({ showRoom, onReady, isExiting, isWarmup, content }) => {
             }
         });
 
-    }, [isAnimating, camera, responsiveParams, openOverlay]);
+    }, [isAnimating, camera, responsiveParams, openOverlay, setPreviewSelectedId]);
 
     // Trigger camera return ONLY when overlay is explicitly closed
     // We use a ref to track if overlay was previously open to avoid initial race conditions

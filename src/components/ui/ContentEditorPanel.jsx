@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSiteConfig } from '../../context/SiteConfigContext';
 import { siteConfig } from '../../site.config';
+import { FONT_OPTIONS, DEFAULT_ENGLISH_FONT_ID, DEFAULT_CHINESE_FONT_ID } from '../../fonts/fontCatalog';
 import '../../styles/ContentEditorPanel.scss';
 
 /**
@@ -58,10 +59,19 @@ const pickDoorFields = (room) => ({
 });
 
 // 深度更新 content 的指定路径（path 为键/下标数组）
+// 中间节点若缺失则自动创建（对象/数组），避免「awards.other 等空组或未初始化结构」写入时报错
 const updateAt = (content, path, value) => {
     const clone = JSON.parse(JSON.stringify(content ?? {}));
     let cur = clone;
-    for (let i = 0; i < path.length - 1; i++) cur = cur[path[i]];
+    for (let i = 0; i < path.length - 1; i++) {
+        const key = path[i];
+        const nextKey = path[i + 1];
+        if (cur[key] == null) {
+            // 下一个键是数字下标 → 建数组；否则建对象
+            cur[key] = typeof nextKey === 'number' ? [] : {};
+        }
+        cur = cur[key];
+    }
     cur[path[path.length - 1]] = value;
     return clone;
 };
@@ -391,7 +401,7 @@ const CorridorTextureFields = ({ textures = {}, onUpdate }) => (
 );
 
 const ContentEditorPanel = () => {
-    const { rooms, updateRoom, updateRoomContent, homeContent, updateHomeContent, outdoorContent, updateOutdoorContent, corridorTextures, updateCorridorTexture, setStudioFocusId } = useSiteConfig();
+    const { rooms, updateRoom, updateRoomContent, homeContent, updateHomeContent, outdoorContent, updateOutdoorContent, corridorTextures, updateCorridorTexture, setStudioFocusId, previewSelectedId, selectedFonts, updateThemeFont } = useSiteConfig();
     const [open, setOpen] = useState(false);
     const [activeTab, setActiveTab] = useState('outdoor'); // 'content' | 'corridor' | 'home' | 'outdoor'
     const [roomId, setRoomId] = useState('gallery');
@@ -415,6 +425,8 @@ const ContentEditorPanel = () => {
     const savedHomeRef = useRef(undefined);
     const savedOutdoorRef = useRef(undefined);
     const savedCorridorTexturesRef = useRef(undefined);
+    // 字体选择的「恢复基准」：初始为配置默认值；保存成功后更新为刚保存的选择
+    const savedFontsRef = useRef({ ...selectedFonts });
     const getBase = (rid) => (
         savedBaseRef.current[rid] !== undefined
             ? savedBaseRef.current[rid]
@@ -426,15 +438,30 @@ const ContentEditorPanel = () => {
             : pickDoorFields(siteConfig.rooms.find((r) => r.id === rid))
     );
 
-    // 快捷键：E 开关，Esc 关闭
+    // 快捷键：仅 Esc 关闭编辑框（不再用 E 开关）
     useEffect(() => {
         const handleKey = (e) => {
             if (e.key === 'Escape') setOpen(false);
-            else if (e.key === 'e' || e.key === 'E') setOpen((o) => !o);
         };
         window.addEventListener('keydown', handleKey);
         return () => window.removeEventListener('keydown', handleKey);
     }, []);
+
+    // 双向联动：在预览区点击监视器 → StudioRoom 会 setPreviewSelectedId(id)，
+    // 这里把右侧编辑区的条目索引同步到该 id 对应的条目，方便直接编辑。
+    // 注意：只在 previewSelectedId「变化」时同步一次，绝不因 rooms 更新（编辑字段）而反复拉回 ——
+    // 否则用户编辑 B 条目时会被强行跳回预览点过的 A 条目。
+    const appliedPreviewIdRef = useRef(null);
+    useEffect(() => {
+        if (!previewSelectedId || previewSelectedId === appliedPreviewIdRef.current) return;
+        const studioRoom = rooms.find((r) => r.id === 'studio');
+        const items = studioRoom?.content?.items || [];
+        const idx = items.findIndex((it) => it.id === previewSelectedId);
+        if (idx !== -1) {
+            setStudioIdx(idx);
+            appliedPreviewIdRef.current = previewSelectedId;
+        }
+    }, [previewSelectedId, rooms]);
 
     const setContentPath = (path, value) => {
         updateRoomContent(roomId, (c) => updateAt(c, path, value));
@@ -670,6 +697,7 @@ const ContentEditorPanel = () => {
             const isCorridor = activeTab === 'corridor';
             const isHome = activeTab === 'home';
             const isOutdoor = activeTab === 'outdoor';
+            const isFont = activeTab === 'font';
             // 走廊 tab 同时保存「走廊门」字段 + 「走廊场景贴图」覆盖
             const body = isCorridor
                 ? {
@@ -677,11 +705,13 @@ const ContentEditorPanel = () => {
                     fields: pickDoorFields(doorRoom),
                     corridorTextures,
                 }
-                : isHome
-                    ? { roomId: 'home', content: homeContent }
-                    : isOutdoor
-                        ? { roomId: 'outdoor', content: outdoorContent }
-                        : { roomId, content };
+                : isFont
+                    ? { roomId: 'themeFonts', themeFonts: { ...selectedFonts } }
+                    : isHome
+                        ? { roomId: 'home', content: homeContent }
+                        : isOutdoor
+                            ? { roomId: 'outdoor', content: outdoorContent }
+                            : { roomId, content };
             const res = await fetch('/__save-room-content', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -692,6 +722,8 @@ const ContentEditorPanel = () => {
                 // 保存写入 dev 覆盖文件，不刷新页面（内容已在内存实时生效）
                 if (isCorridor) {
                     savedFieldsRef.current[corridorRoomId] = body.fields;
+                } else if (isFont) {
+                    savedFontsRef.current = { ...selectedFonts };
                 } else if (isHome) {
                     savedHomeRef.current = homeContent;
                 } else if (isOutdoor) {
@@ -722,6 +754,9 @@ const ContentEditorPanel = () => {
                 ? savedOutdoorRef.current
                 : (siteConfig.outdoor?.content);
             if (base) updateOutdoorContent(base);
+        } else if (activeTab === 'font') {
+            updateThemeFont('selectedEnglish', savedFontsRef.current.selectedEnglish ?? DEFAULT_ENGLISH_FONT_ID);
+            updateThemeFont('selectedChinese', savedFontsRef.current.selectedChinese ?? DEFAULT_CHINESE_FONT_ID);
         } else {
             const base = getBase(roomId);
             if (base) updateRoomContent(roomId, base);
@@ -754,6 +789,8 @@ const ContentEditorPanel = () => {
             if (corridorTextures) {
                 await postRaw({ roomId: 'corridor', corridorTextures });
             }
+            // 全局字体选择一并保存
+            await postRaw({ roomId: 'themeFonts', themeFonts: { ...selectedFonts } });
 
             // 更新「恢复默认 / 恢复全部」基准为刚保存的内容
             ROOM_OPTIONS.forEach((o) => {
@@ -763,6 +800,7 @@ const ContentEditorPanel = () => {
             savedHomeRef.current = homeContent;
             savedOutdoorRef.current = outdoorContent;
             savedCorridorTexturesRef.current = corridorTextures;
+            savedFontsRef.current = { ...selectedFonts };
 
             setSaveMsg('已保存全部 ✓');
         } catch (e) {
@@ -794,6 +832,10 @@ const ContentEditorPanel = () => {
             ? savedCorridorTexturesRef.current
             : (siteConfig.corridor?.textures);
         if (corridorBase) updateCorridorTexture(() => corridorBase);
+
+        // 全局字体恢复
+        updateThemeFont('selectedEnglish', savedFontsRef.current.selectedEnglish ?? DEFAULT_ENGLISH_FONT_ID);
+        updateThemeFont('selectedChinese', savedFontsRef.current.selectedChinese ?? DEFAULT_CHINESE_FONT_ID);
 
         setSaveMsg('已恢复全部 → 默认 ✓');
     };
@@ -963,6 +1005,32 @@ const ContentEditorPanel = () => {
         );
     };
 
+    // ============ 字体编辑器（全局英文 / 中文字体选择） ============
+    const renderFontEditor = () => {
+        const englishCandidates = FONT_OPTIONS.filter((f) => f.category === 'en');
+        const chineseCandidates = FONT_OPTIONS.filter((f) => f.category === 'zh');
+        return (
+            <div className="cep-room">
+                <div className="cep-item">
+                    <SelectField label="英文字体（3D 标题 / 门牌 / 副标题）" value={selectedFonts?.selectedEnglish || ''} onChange={(v) => updateThemeFont('selectedEnglish', v)}>
+                        {englishCandidates.map((f) => (
+                            <option key={f.id} value={f.id} disabled={!f.available}>{f.available ? f.label : `${f.label}（未安装）`}</option>
+                        ))}
+                    </SelectField>
+                    <SelectField label="中文字体（含中文的文本）" value={selectedFonts?.selectedChinese || ''} onChange={(v) => updateThemeFont('selectedChinese', v)}>
+                        {chineseCandidates.map((f) => (
+                            <option key={f.id} value={f.id} disabled={!f.available}>{f.available ? f.label : `${f.label}（未安装）`}</option>
+                        ))}
+                    </SelectField>
+                </div>
+                <p className="cep-phase-hint">
+                    默认：英文 Cabin Sketch · 中文 Long Cang。切换后门牌 / 首页标题 / 项目描述即时换字体；「保存修改 / 保存全部」持久化。
+                    「未安装」选项需先把字体 TTF 放到 public/fonts/ 后可用。
+                </p>
+            </div>
+        );
+    };
+
     // ============ 房间内容编辑器 ============
     const renderContentEditor = () => {
         if (roomId === 'gallery') {
@@ -990,8 +1058,8 @@ const ContentEditorPanel = () => {
                             <TextField label="标题" value={p.title} onChange={(v) => setContentPath(['projects', i, 'title'], v)} />
                             <TextField label="描述" value={p.description} onChange={(v) => setContentPath(['projects', i, 'description'], v)} />
                             <TextField label="链接 URL" value={p.url} onChange={(v) => setContentPath(['projects', i, 'url'], v)} />
-                            <UploadBtn label="上传封面" currentUrl={p.front} onUpload={(url) => setContentPath(['projects', i, 'front'], url)} />
-                            <UploadBtn label="上传上色图" currentUrl={p.painted} onUpload={(url) => setContentPath(['projects', i, 'painted'], url)} />
+                            <UploadBtn label="上传封面" currentUrl={p.front} onUpload={(url) => setContentPath(['projects', i, 'front'], url)} onClear={() => setContentPath(['projects', i, 'front'], '')} />
+                            <UploadBtn label="上传上色图" currentUrl={p.painted} onUpload={(url) => setContentPath(['projects', i, 'painted'], url)} onClear={() => setContentPath(['projects', i, 'painted'], '')} />
 
                             {/* 技术栈 logo：图片路径数组，可添加/替换/删除 */}
                             <div className="cep-techstack">
@@ -1209,10 +1277,18 @@ const ContentEditorPanel = () => {
                                         onChange={(v) => setContentPath(['awards', awardGroup, 'items', awardIdx, 'date'], v)}
                                     />
                                     <TextField
-                                        label="颁奖方链接（点击证书跳转）"
+                                        label="颁奖方链接（跳转目标）"
                                         value={item.url}
                                         onChange={(v) => setContentPath(['awards', awardGroup, 'items', awardIdx, 'url'], v)}
                                     />
+                                    <SelectField
+                                        label="点击证书行为"
+                                        value={item.clickAction || 'link'}
+                                        onChange={(v) => setContentPath(['awards', awardGroup, 'items', awardIdx, 'clickAction'], v)}
+                                    >
+                                        <option value="link">跳转颁奖方链接</option>
+                                        <option value="zoom">放大查看证书图</option>
+                                    </SelectField>
                                     <UploadBtn
                                         dir="about"
                                         label="上传证书图（缩略图，弹层里显示）"
@@ -1233,6 +1309,7 @@ const ContentEditorPanel = () => {
                                                     date: new Date().toISOString().slice(0, 10),
                                                     image: '/textures/about/FEATURED.webp',
                                                     url: '',
+                                                    clickAction: 'link',
                                                 });
                                                 return { ...c, awards: { ...c.awards, [awardGroup]: { ...g, items: its } } };
                                             });
@@ -1468,7 +1545,7 @@ const ContentEditorPanel = () => {
                 type="button"
                 className={`cep-toggle ${open ? 'active' : ''}`}
                 onClick={() => setOpen((o) => !o)}
-                title="实时编辑 (E)"
+                title="实时编辑"
                 aria-label="实时编辑"
             >
                 ✏️
@@ -1512,6 +1589,13 @@ const ContentEditorPanel = () => {
                         >
                             房间内容
                         </button>
+                        <button
+                            type="button"
+                            className={`cep-tab ${activeTab === 'font' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('font')}
+                        >
+                            字体
+                        </button>
                     </div>
 
                     <div className="cep-body">
@@ -1528,6 +1612,8 @@ const ContentEditorPanel = () => {
                             renderCorridorEditor()
                         ) : activeTab === 'home' ? (
                             renderHomeEditor()
+                        ) : activeTab === 'font' ? (
+                            renderFontEditor()
                         ) : (
                             renderOutdoorEditor()
                         )}

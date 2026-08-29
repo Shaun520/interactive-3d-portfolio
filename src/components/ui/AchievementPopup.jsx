@@ -8,7 +8,7 @@ import '../../styles/AchievementPopup.scss';
 const AchievementPopup = () => {
     const { activePopup } = useAchievements();
     const { isMuted, toggleMute, setGlobalVolume } = useAudio();
-    const { outdoorContent } = useSiteConfig();
+    const { outdoorContent, fontForDom } = useSiteConfig();
 
     if (!activePopup) return null;
 
@@ -20,6 +20,14 @@ const AchievementPopup = () => {
 
     // Specjalna logika dla corridor_enter (pytanie o dźwięk)
     const isSoundPrompt = activePopup.id === 'corridor_enter';
+
+    // 屋外提示条标题/正文：按内容自动用中/英字体（英文 EXPLORER → 英文字体，中文 → 中文字体）
+    const popupTitle = isSoundPrompt ? (outdoorContent?.tutorialTitle || data.title) : data.title;
+    const popupLabel = isSoundPrompt
+        ? (outdoorContent?.tutorialLabel || data.label)
+        : data.label;
+    const titleFont = fontForDom(popupTitle);
+    const labelFont = fontForDom(popupLabel);
 
     return (
         <div
@@ -53,15 +61,16 @@ const AchievementPopup = () => {
                     </div>
                 )}
                 <div className="text-content" style={isSoundPrompt ? { alignItems: 'center', textAlign: 'center' } : {}}>
-                    <span className="title">{isSoundPrompt ? (outdoorContent?.tutorialTitle || data.title) : data.title}</span>
+                    <span className="title" style={{ fontFamily: titleFont }}>{isSoundPrompt ? (outdoorContent?.tutorialTitle || data.title) : data.title}</span>
 
                     {!isSoundPrompt ? (
-                        <span className="description">{data.label}</span>
+                        <span className="description" style={{ fontFamily: labelFont }}>{data.label}</span>
                     ) : (
-                        <span className="description">
+                        <span className="description" style={{ fontFamily: labelFont }}>
                             {outdoorContent?.tutorialLabel || data.label}
                             <button
                                 className={`inline-sound-toggle ${!isMuted ? 'on' : 'off'}`}
+                                style={{ fontFamily: labelFont }}
                                 onClick={(e) => {
                                     e.stopPropagation();
 

@@ -74,13 +74,14 @@ function saveRoomContentPlugin() {
         req.on('data', (chunk) => { body += chunk; });
         req.on('end', () => {
           try {
-            const { roomId, content, fields, corridorTextures } = JSON.parse(body);
-            if (!roomId || (content === undefined && fields === undefined && corridorTextures === undefined)) {
+            const { roomId, content, fields, corridorTextures, themeFonts } = JSON.parse(body);
+            if (!roomId || (content === undefined && fields === undefined && corridorTextures === undefined && themeFonts === undefined)) {
               throw new Error('roomId and content/fields are required');
             }
-            // 覆盖文件结构：{ content: { roomId }, rooms: { roomId }, corridorTextures }
+            // 覆盖文件结构：{ content: { roomId }, rooms: { roomId }, corridorTextures, themeFonts }
             // content 存房间内部内容；rooms 存门牌/侧/位置/贴图等房间字段
             // corridorTextures 存走廊场景贴图（地板/天花板/墙/门通用件/装饰）
+            // themeFonts 存全局字体选择（selectedEnglish / selectedChinese）
             let overrides = {};
             try {
               overrides = JSON.parse(readFileSync(DEV_CONTENT_PATH, 'utf8'));
@@ -90,6 +91,7 @@ function saveRoomContentPlugin() {
             if (content !== undefined) overrides.content[roomId] = content;
             if (fields !== undefined) overrides.rooms[roomId] = fields;
             if (corridorTextures !== undefined) overrides.corridorTextures = corridorTextures;
+            if (themeFonts !== undefined) overrides.themeFonts = themeFonts;
             writeFileSync(DEV_CONTENT_PATH, JSON.stringify(overrides, null, 2));
             res.setHeader('Content-Type', 'application/json');
             res.end(JSON.stringify({ ok: true }));

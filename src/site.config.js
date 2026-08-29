@@ -80,8 +80,13 @@ const baseSiteConfig = {
         },
 
         fonts: {
-            display3D: '/fonts/CabinSketch-Bold.ttf', // drei <Text> 使用的字体
+            display3D: '/fonts/CabinSketch-Bold.ttf', // drei <Text> 使用的字体（门牌）
             body: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif", // DOM 字体
+            // 全局字体选择（与 src/fonts/fontCatalog.js 对应）：
+            // selectedEnglish 控制英文 3D 文本（门牌/首页标题/副标题/装饰）
+            // selectedChinese 控制含中文的 3D 文本（项目卡片描述）
+            selectedEnglish: 'sketch',
+            selectedChinese: 'longcang',
         },
 
         // 素材替换（Material Replacement）

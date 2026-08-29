@@ -5,11 +5,13 @@ import * as THREE from 'three';
 import gsap from 'gsap';
 import '../../shaders/RevealMaterial';
 import { isTouchDevice } from '../../../../utils/deviceDetect';
+import { useSiteConfig } from '../../../../context/SiteConfigContext';
 
 // Reusable Vector3 to avoid allocations in useFrame
 const _tempScale = new THREE.Vector3();
 
 const SocialBarrel = ({ position, rotation = [0, 0, 0], texturePath, label, onClick, scale = [2.12, 2.3], paintOnBeforeCompile, paintUniforms }) => {
+    const { fontForText } = useSiteConfig();
     const meshRef = useRef();
     const materialRef = useRef();
     const paintedRef = useRef();
@@ -144,7 +146,7 @@ const SocialBarrel = ({ position, rotation = [0, 0, 0], texturePath, label, onCl
                     position={[0, scale[1] * 0.26, 0.05]} // Adjust Y position to hit the wooden board on top of the barrel
                     rotation={[0, 0, 0.03]} // Slight tilt to match a drawn wooden board
                     fontSize={scale[0] * 0.14}
-                    font="/fonts/CabinSketch-Bold.ttf"
+                    font={fontForText(label)}
                     color="#111111"
                     fillOpacity={paintUniforms ? 0 : 1}
                     anchorX="center"

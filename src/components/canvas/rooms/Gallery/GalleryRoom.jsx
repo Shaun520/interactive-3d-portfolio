@@ -8,6 +8,7 @@ import { useScene } from '../../../../context/SceneContext';
 
 gsap.registerPlugin(Observer);
 import { useAchievements } from '../../../../context/AchievementsContext';
+import { useSiteConfig } from '../../../../context/SiteConfigContext';
 import PaperMaterial from './PaperMaterial';
 import GalleryClouds from './GalleryClouds';
 import { useAudio } from '../../../../context/AudioManager';
@@ -215,7 +216,19 @@ const GalleryRoom = ({ showRoom, onReady, isExiting, isWarmup, content }) => {
     const [canHover, setCanHover] = useState(() => typeof window !== 'undefined' ? window.matchMedia('(hover: hover)').matches : true);
 
     // 项目数据来自 site.config.js 的 content.projects（改配置保存后自动刷新预览）
-    const activeProjects = content?.projects?.length ? content.projects : FALLBACK_PROJECTS;
+    // 壁纸字段（front/painted）允许被编辑面板「删除」置空 → 这里回退到对应默认贴图，
+    // 避免 useTexture('') 加载空地址报错。
+    const activeProjects = useMemo(() => {
+        const base = content?.projects?.length ? content.projects : FALLBACK_PROJECTS;
+        return base.map((p, idx) => {
+            const fallback = FALLBACK_PROJECTS[idx % FALLBACK_PROJECTS.length] || {};
+            return {
+                ...p,
+                front: p.front || fallback.front || '',
+                painted: p.painted || fallback.painted || fallback.front || '',
+            };
+        });
+    }, [content?.projects]);
 
     useEffect(() => {
         const mq = window.matchMedia('(hover: hover)');
@@ -698,6 +711,7 @@ const FlyingBird = ({ texture }) => {
 
 // Sub-component for individual project cards
 const ProjectCard = memo(forwardRef(({ index, project, clothespinTexture, currentScroll, materials, curve, isSelected, scrollToIndex, onClick, isMobile, isTransitioning, paintProgress, roomOrigin }, ref) => {
+    const { fontForText } = useSiteConfig();
     const cardRef = useRef();
     const paperRef = useRef(); // Ref for the moving part (Paper)
     const materialRef = useRef();
@@ -713,6 +727,39 @@ const ProjectCard = memo(forwardRef(({ index, project, clothespinTexture, curren
     const [btnHovered, setBtnHovered] = useState(false);
     const [isAnimating, setIsAnimating] = useState(false);  // True ONLY during flip animation
     const [isScrolling, setIsScrolling] = useState(false);  // True during scroll phase
+
+    // 自适应字号与宽度：含中文时适度降字号（保持可读性），避免溢出
+    // 关键：卡片宽度 1.5，maxWidth 绝不能超过卡片可用宽度（扣掉边距约 1.3），否则横向溢出
+    // 字体按内容自动选：含中文用中文字体、纯英文用英文字体（fontForText 全局统一判断）
+    //
+    // ⚠️ 关键坑：之前按 text.length 分档（0.05/0.04/0.036）会导致同一段描述里
+    // 硬换行（用户输入的 \n）部分用 0.05，软换行（troika 自动 break）部分用 0.04
+    // → 用户看到"一段文字里有些字大有些字小"。
+    // 解决：所有中文统一一个字号，渲染路径完全一致。
+    // 长文本靠「缩小字号 + 增大 maxWidth + 强制按字断开」三件套一起用：
+    //   - 字号 0.045：与英文 0.055 视觉接近（中文宽 ≈ 英文 1.5 倍），可读性 OK
+    //   - maxWidth 1.3：卡片 1.5 内留 0.1 边距
+    //   - whiteSpace="pre" + overflowWrap="break-word"：保留用户 \n 为硬换行，
+    //     段内超长自动按字断开为软换行，渲染路径统一
+    const descriptionLayout = useMemo(() => {
+        const text = project.description || '';
+        const cjkCount = (text.match(/[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/g) || []).length;
+        const cjkRatio = text.length ? cjkCount / text.length : 0;
+        const isCJK = cjkRatio > 0.15;
+
+        return {
+            // 中文统一 0.045（不再按长度分档，杜绝软/硬换行字号不一致的 bug）
+            fontSize: isCJK ? 0.045 : 0.055,
+            // 1.3 是卡内可用宽（卡片 1.5 - 0.2 边距），给 break-word 留足换行空间
+            maxWidth: isCJK ? 1.3 : 1.15,
+            lineHeight: isCJK ? 1.5 : 1.4,
+            // pre：保留用户输入的 \n 作为硬换行；break-word：段内超长按字断开为软换行
+            // 二者都走同一渲染路径 → 同一段文字内字号绝对一致
+            whiteSpace: 'pre',
+            overflowWrap: isCJK ? 'break-word' : 'normal',
+            font: fontForText(text),
+        };
+    }, [project.description, fontForText]);
 
     // Random sway properties
     const swaySpeed = useRef(Math.random() * 0.2 + 0.3); // Slower sway speed
@@ -1174,7 +1221,7 @@ const ProjectCard = memo(forwardRef(({ index, project, clothespinTexture, curren
                         position={[0, 0, 0.01]}
                         fontSize={0.11}
                         color={btnHovered ? "#333333" : "#1c1c1c"}
-                        font="/fonts/CabinSketch-Bold.ttf"
+                        font={fontForText('OPEN PROJECT')}
                         anchorX="center"
                         anchorY="middle"
                         fillOpacity={0} // Start hidden
@@ -1220,7 +1267,7 @@ const ProjectCard = memo(forwardRef(({ index, project, clothespinTexture, curren
                         position={[0, 0.28, 0.01]} // Względem środka detailsGroupRef, wyżej
                         fontSize={0.10}
                         color="#1c1c1c"
-                        font="/fonts/CabinSketch-Bold.ttf"
+                        font={fontForText('PROJECT DETAILS:')}
                         anchorX="center"
                         anchorY="middle"
                         fillOpacity={0} // Start hidden
@@ -1231,14 +1278,19 @@ const ProjectCard = memo(forwardRef(({ index, project, clothespinTexture, curren
                     <Text
                         ref={detailsTextRef2}
                         position={[0, 0.2, 0.01]} // Poniżej nagłówka
-                        fontSize={0.06}
+                        fontSize={descriptionLayout.fontSize}
                         color="#333333"
-                        font="/fonts/CabinSketch-Bold.ttf"
+                        // 中文字体 Long Cang（手写钢笔风，自带中英字形），troika 直接解析自托管 TTF
+                        font={descriptionLayout.font}
                         anchorX="center"
                         anchorY="top"
-                        maxWidth={1.1} // Maksymalna szerokość zanim zacznie łamać linie
-                        lineHeight={1.4}
+                        maxWidth={descriptionLayout.maxWidth}
+                        lineHeight={descriptionLayout.lineHeight}
                         textAlign="center"
+                        // pre：保留用户输入的 \n；break-word：长 CJK 串按字断开。
+                        // 两件套保证软硬换行走同一渲染路径，字号 100% 一致
+                        whiteSpace={descriptionLayout.whiteSpace}
+                        overflowWrap={descriptionLayout.overflowWrap}
                         fillOpacity={0} // Start hidden
                     >
                         {project.description || "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco."}
@@ -1256,7 +1308,7 @@ const ProjectCard = memo(forwardRef(({ index, project, clothespinTexture, curren
                         position={[0, 0.15, 0.01]}
                         fontSize={0.08}
                         color="#1c1c1c"
-                        font="/fonts/CabinSketch-Bold.ttf"
+                        font={fontForText('TECH STACK')}
                         anchorX="center"
                         anchorY="middle"
                         fillOpacity={0} // Start hidden
@@ -1267,15 +1319,50 @@ const ProjectCard = memo(forwardRef(({ index, project, clothespinTexture, curren
                     {/* Kontener na loga układane poziomo */}
                     <group position={[0, -0.05, 0.01]}>
                         {project.techStack && project.techStack.map((logoPath, idx) => {
-                            // Rozstawienie kwadracików (4 sztuki wyśrodkowane)
-                            const spacing = 0.30;
-                            const startX = -((project.techStack.length - 1) * spacing) / 2;
-                            const xPos = startX + (idx * spacing);
+                            // 卡片背景 tylkartki.webp 是固定 4 个等分手绘格子（4 槽位），spacing 0.30，start -0.45
+                            // 不论 techStack 长度 1/2/3/4，logo 都要落在背景的 4 个格子里
+                            // → 按"对称"原则从 4 个槽位里选最居中的 n 个（质心最接近 0）
+                            const SLOTS = [-0.45, -0.15, 0.15, 0.45];
+                            const n = project.techStack.length;
+                            let chosen;
+                            if (n >= 4) {
+                                chosen = SLOTS; // 4 槽位全用
+                            } else if (n === 3) {
+                                chosen = [-0.45, -0.15, 0.15]; // 左 3 槽（[0,1,2]）
+                            } else if (n === 2) {
+                                chosen = [-0.15, 0.15]; // 中 2 槽（[1,2] 质心=0）
+                            } else {
+                                chosen = [0]; // 1 个时取最居中（即使不在格子里，单 logo 居中视觉最稳）
+                            }
+                            const xPos = chosen[idx];
 
                             return (
                                 <TechStackLogo key={idx} path={logoPath} position={[xPos, 0, 0]} />
                             );
                         })}
+
+                        {/* 4 个 mask plane：擦除未使用的"手绘格子"背景，让 n<4 时只显示 n 个手绘框
+                            mask 用纯纸色（与卡片底色一致）覆盖未用槽位，让背后的手绘线"消失" */}
+                        {(() => {
+                            const n = project.techStack?.length || 0;
+                            if (n >= 4) return null; // 4 格全用，不需要擦
+                            const SLOTS = [-0.45, -0.15, 0.15, 0.45];
+                            // 要擦除的槽位：n<4 时所有未用到的位置
+                            // n=3 → 擦 [3]；n=2 → 擦 [0,3]；n=1 → 擦 [0,1,3]（留 [2] 给单 logo）
+                            // 但 1 个 logo 时我们让 logo 居中 [0]，不在 4 个槽位中 → 4 个全擦
+                            let eraseSlots;
+                            if (n === 3) eraseSlots = [SLOTS[3]];
+                            else if (n === 2) eraseSlots = [SLOTS[0], SLOTS[3]];
+                            else if (n === 1) eraseSlots = SLOTS; // 单 logo 居中，把 4 格全擦
+                            else eraseSlots = SLOTS;
+                            return eraseSlots.map((x, i) => (
+                                <mesh key={`mask-${i}`} position={[x, 0, 0.005]}>
+                                    {/* 略大于手绘格子（手绘格子边长 ~0.20~0.25），用 0.30 保险覆盖 */}
+                                    <planeGeometry args={[0.30, 0.30]} />
+                                    <meshBasicMaterial color="#f4ebd0" transparent={false} />
+                                </mesh>
+                            ));
+                        })()}
                     </group>
                 </group>
 
@@ -1297,9 +1384,14 @@ const ProjectCard = memo(forwardRef(({ index, project, clothespinTexture, curren
                     position={[0, 0.7, 0]} // Tylko dwa pierwsze parametry [X, Y] mają tutaj znaczenie
                     fontSize={0.20}
                     color="#1c1c1c"
-                    font="/fonts/CabinSketch-Bold.ttf"
+                    font={fontForText(project.title)}
                     anchorX="center"
                     anchorY="middle"
+                    // 标题也加 maxWidth + break-word：长 CJK 标题（如「一站式 AI 视频生成调度平台」）
+                    // 没有空格时 troika 默认不换行，会撑爆卡片正面。卡片宽 1.5，标题留 1.3 边距
+                    maxWidth={1.3}
+                    overflowWrap="break-word"
+                    textAlign="center"
                     fillOpacity={0} // Start hidden
                 >
                     {project.title}

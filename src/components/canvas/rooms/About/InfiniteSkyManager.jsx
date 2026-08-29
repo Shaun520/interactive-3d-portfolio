@@ -7,6 +7,7 @@ import SkyChunk, { CHUNK_LENGTH, ROOM_Z } from './SkyChunk';
 import { useScene } from '../../../../context/SceneContext';
 import '../../shaders/RevealBasicMaterial'; // Registers brush-stroke reveal for BasicMaterial
 import { isTouchDevice } from '../../../../utils/deviceDetect';
+import { useSiteConfig } from '../../../../context/SiteConfigContext';
 
 // Reusable Vector3 to avoid allocations in event handlers
 const _tempVec3 = new THREE.Vector3();
@@ -32,6 +33,7 @@ export const BALLOON_AUDIO_SETTINGS = {
  */
 const AwardButton = ({ onClick, texture, paintedTexture, width, height, position, onHoverChange }) => {
     const isTouch = isTouchDevice();
+    const { fontForText } = useSiteConfig();
     const meshRef = useRef();
     const buttonRevealRef = useRef(); // RevealBasicMaterial ref for button sketch
     const paintedRef = useRef(); // Painted button mesh visibility
@@ -131,7 +133,7 @@ const AwardButton = ({ onClick, texture, paintedTexture, width, height, position
                 color="#1a1a1a"
                 anchorX="center"
                 anchorY="middle"
-                font="/fonts/CabinSketch-Bold.ttf"
+                font={fontForText('VIEW')}
             >
                 VIEW
             </Text>
@@ -265,6 +267,7 @@ const IntroMilestone = ({ z, scrollProgressRef, intro }) => {
     const avatarTexture = useLoader(THREE.TextureLoader, intro?.avatar || '/textures/about/awatarnachmurce.webp');
     const { camera, viewport } = useThree();
     const isTouch = isTouchDevice();
+    const { fontForText } = useSiteConfig();
 
     // Refs for all animated elements
     const groupRef = useRef();
@@ -353,7 +356,7 @@ const IntroMilestone = ({ z, scrollProgressRef, intro }) => {
                 color="#1a1a1a"
                 anchorX="center"
                 anchorY="middle"
-                font="/fonts/RubikScribble-Regular.ttf"
+                font={fontForText(intro?.name || 'TOMASZ SZMAJDA')}
             >
                 {intro?.name || 'TOMASZ SZMAJDA'}
             </Text>
@@ -366,7 +369,7 @@ const IntroMilestone = ({ z, scrollProgressRef, intro }) => {
                 color="#4a4a4a"
                 anchorX="center"
                 anchorY="middle"
-                font="/fonts/CabinSketch-Regular.ttf"
+                font={fontForText(intro?.brand || '(ITOM)')}
             >
                 {intro?.brand || '(ITOM)'}
             </Text>
@@ -390,7 +393,7 @@ const IntroMilestone = ({ z, scrollProgressRef, intro }) => {
                 color="#555555"
                 anchorX="center"
                 anchorY="middle"
-                font="/fonts/CabinSketch-Regular.ttf"
+                font={fontForText(intro?.motto1 || '"Crafting digital experiences')}
                 fontStyle="italic"
             >
                 {intro?.motto1 || '"Crafting digital experiences'}
@@ -404,7 +407,7 @@ const IntroMilestone = ({ z, scrollProgressRef, intro }) => {
                 color="#555555"
                 anchorX="center"
                 anchorY="middle"
-                font="/fonts/CabinSketch-Regular.ttf"
+                font={fontForText(intro?.motto2 || 'that push creative boundaries"')}
                 fontStyle="italic"
             >
                 {intro?.motto2 || 'that push creative boundaries"'}
@@ -484,6 +487,7 @@ const AwardsMilestone = ({ z, scrollProgressRef, awards }) => {
     const { camera, viewport } = useThree();
     const isTouch = isTouchDevice();
     const { openOverlay } = useScene();
+    const { fontForText } = useSiteConfig();
     const groupRef = useRef();
     const sotyRef = useRef();
     const sotdRef = useRef();
@@ -624,7 +628,7 @@ const AwardsMilestone = ({ z, scrollProgressRef, awards }) => {
                 color="#1a1a1a"
                 anchorX="center"
                 anchorY="middle"
-                font="/fonts/RubikScribble-Regular.ttf"
+                font={fontForText('AWARDS')}
             >
                 AWARDS
             </Text>
@@ -673,7 +677,7 @@ const AwardsMilestone = ({ z, scrollProgressRef, awards }) => {
                     color="#1a1a1a"
                     anchorX="center"
                     anchorY="middle"
-                    font="/fonts/CabinSketch-Bold.ttf"
+                    font={fontForText('SOTD')}
                 >
                     SOTD
                 </Text>
@@ -684,7 +688,7 @@ const AwardsMilestone = ({ z, scrollProgressRef, awards }) => {
                     color="#1a1a1a"
                     anchorX="center"
                     anchorY="middle"
-                    font="/fonts/CabinSketch-Bold.ttf"
+                    font={fontForText(awardsData.sotd.items.length)}
                 >
                     {awardsData.sotd.items.length}
                 </Text>
@@ -734,7 +738,7 @@ const AwardsMilestone = ({ z, scrollProgressRef, awards }) => {
                     color="#1a1a1a"
                     anchorX="center"
                     anchorY="middle"
-                    font="/fonts/CabinSketch-Bold.ttf"
+                    font={fontForText('SOTM')}
                 >
                     SOTM
                 </Text>
@@ -745,7 +749,7 @@ const AwardsMilestone = ({ z, scrollProgressRef, awards }) => {
                     color="#1a1a1a"
                     anchorX="center"
                     anchorY="middle"
-                    font="/fonts/CabinSketch-Bold.ttf"
+                    font={fontForText(awardsData.sotm.items.length)}
                 >
                     {awardsData.sotm.items.length}
                 </Text>
@@ -794,7 +798,7 @@ const AwardsMilestone = ({ z, scrollProgressRef, awards }) => {
                     color="#1a1a1a"
                     anchorX="center"
                     anchorY="middle"
-                    font="/fonts/CabinSketch-Bold.ttf"
+                    font={fontForText('OTHER')}
                 >
                     OTHER
                 </Text>
@@ -805,7 +809,7 @@ const AwardsMilestone = ({ z, scrollProgressRef, awards }) => {
                     color="#1a1a1a"
                     anchorX="center"
                     anchorY="middle"
-                    font="/fonts/CabinSketch-Bold.ttf"
+                    font={fontForText(awardsData.other.items.length)}
                 >
                     {awardsData.other.items.length}
                 </Text>
@@ -821,6 +825,7 @@ const AwardsMilestone = ({ z, scrollProgressRef, awards }) => {
 const JourneyMilestone = ({ z, scrollProgressRef, journey }) => {
     const { camera, viewport } = useThree();
     const isTouch = isTouchDevice();
+    const { fontForText } = useSiteConfig();
     const groupRef = useRef();
     const uoRef = useRef();
     const freelanceRef = useRef();
@@ -908,7 +913,7 @@ const JourneyMilestone = ({ z, scrollProgressRef, journey }) => {
                 color="#1a1a1a"
                 anchorX="center"
                 anchorY="middle"
-                font="/fonts/RubikScribble-Regular.ttf"
+                font={fontForText(journey?.title || 'JOURNEY')}
             >
                 {journey?.title || 'JOURNEY'}
             </Text>
@@ -920,7 +925,7 @@ const JourneyMilestone = ({ z, scrollProgressRef, journey }) => {
                 color="#555555"
                 anchorX="center"
                 anchorY="middle"
-                font="/fonts/CabinSketch-Regular.ttf"
+                font={fontForText(journey?.subtitle || 'My path so far...')}
             >
                 {journey?.subtitle || 'My path so far...'}
             </Text>
@@ -942,7 +947,7 @@ const JourneyMilestone = ({ z, scrollProgressRef, journey }) => {
                     color="#1a1a1a"
                     anchorX="center"
                     anchorY="middle"
-                    font="/fonts/CabinSketch-Bold.ttf"
+                    font={fontForText(uoData.period)}
                 >
                     {uoData.period}
                 </Text>
@@ -965,7 +970,7 @@ const JourneyMilestone = ({ z, scrollProgressRef, journey }) => {
                     color="#1a1a1a"
                     anchorX="center"
                     anchorY="middle"
-                    font="/fonts/CabinSketch-Bold.ttf"
+                    font={fontForText(freelanceData.period)}
                 >
                     {freelanceData.period}
                 </Text>
@@ -1010,6 +1015,7 @@ const SIZE_MULTIPLIERS = {
 const SkillBalloon = ({ config, revealFactorRef, spreadFactorRef, timeRef }) => {
     const { viewport } = useThree();
     const isTouch = isTouchDevice();
+    const { fontForText } = useSiteConfig();
     const texture = useLoader(THREE.TextureLoader, config.texture);
     const paintedTextureUrl = isTouch ? config.texture : config.paintedTexture;
     const paintedTexture = useLoader(THREE.TextureLoader, paintedTextureUrl);
@@ -1315,7 +1321,7 @@ const SkillBalloon = ({ config, revealFactorRef, spreadFactorRef, timeRef }) => 
                         color="#1a1a1a"
                         anchorX="center"
                         anchorY="middle"
-                        font="/fonts/RubikScribble-Regular.ttf"
+                        font={fontForText(config.label)}
                         fillOpacity={0}
                         outlineWidth={0.02}
                         outlineColor="#fff"
@@ -1341,6 +1347,7 @@ const SkillBalloon = ({ config, revealFactorRef, spreadFactorRef, timeRef }) => 
 const SkillsMilestone = ({ z, scrollProgressRef, skills }) => {
     const { camera, viewport } = useThree();
     const isTouch = isTouchDevice();
+    const { fontForText } = useSiteConfig();
     const groupRef = useRef();
     // P2: Use refs instead of state to avoid 60 re-renders/sec inside useFrame
     const revealFactorRef = useRef(0);
@@ -1407,7 +1414,7 @@ const SkillsMilestone = ({ z, scrollProgressRef, skills }) => {
                 color="#1a1a1a"
                 anchorX="center"
                 anchorY="middle"
-                font="/fonts/RubikScribble-Regular.ttf"
+                font={fontForText(skills?.title || 'SKILLS')}
             >
                 {skills?.title || 'SKILLS'}
             </Text>
@@ -1419,7 +1426,7 @@ const SkillsMilestone = ({ z, scrollProgressRef, skills }) => {
                 color="#555555"
                 anchorX="center"
                 anchorY="middle"
-                font="/fonts/CabinSketch-Regular.ttf"
+                font={fontForText(skills?.subtitle || 'Technologies I love working with')}
             >
                 {skills?.subtitle || 'Technologies I love working with'}
             </Text>

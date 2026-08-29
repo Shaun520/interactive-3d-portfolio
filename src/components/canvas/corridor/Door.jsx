@@ -7,6 +7,7 @@ import { PositionalAudio } from '@react-three/drei';
 import '../shaders/RevealMaterial'; // Registers alpha-discard reveal shader
 import { useAudio } from '../../../../context/AudioManager';
 import { isTouchDevice } from '../../../../utils/deviceDetect';
+import { useSiteConfig } from '../../../../context/SiteConfigContext';
 
 // Global settings for entrance doors audio
 const ENTRANCE_DOOR_AUDIO_SETTINGS = {
@@ -30,6 +31,7 @@ const Door = ({
     autoCloseDelay = 3000,
     type // Assuming 'type' is a new prop for texture selection
 }) => {
+    const { fontForText } = useSiteConfig();
     // Preload textures
     // Texture Loader Hook MUST be called indiscriminately to keep React Hooks consistent
     const textureMap = useTexture(`/textures/corridor/doors/drzwi${type}.webp`);
@@ -183,6 +185,7 @@ const Door = ({
                     position={[0, 0, 0.01]}
                     fontSize={0.12}
                     color="#1a1a1a"
+                    font={fontForText(`${label}`)}
                     anchorX="center"
                     anchorY="middle"
                     renderOrder={3}

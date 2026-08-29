@@ -3,10 +3,10 @@ import { useRef, useState, useEffect, useMemo, useCallback } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Text, useTexture, Html, useCursor } from '@react-three/drei';
 import * as THREE from 'three';
+import { useSiteConfig } from '../../../../context/SiteConfigContext';
 
 const PAPER_WIDTH = 1.51; // Legacy ratio 1197/1340
 const PAPER_HEIGHT = 1.7;
-const FONT_PATH = '/fonts/CabinSketch-Regular.ttf';
 
 // Helper: Interactive Text Field with Smooth Animation and Invisible Hitbox
 const InteractiveTextField = ({
@@ -36,6 +36,14 @@ const InteractiveTextField = ({
     const textRef = useRef();
     const [hovered, setHovered] = useState(false);
     useCursor(hovered);
+
+    // 中英文字体自动选 + 长 CJK 串强制 break-word，避免溢出
+    // （MessagePaper 内容多为表单输入，用户可能输入中文，需与 Gallery 卡片描述一致地处理）
+    const isCJKText = useMemo(() => {
+        const s = String(value || placeholder || '');
+        return /[\u3000-\u303f\u3400-\u9fff\uff00-\uffef]/.test(s);
+    }, [value, placeholder]);
+    const safeOverflowWrap = isCJKText ? 'break-word' : 'normal';
 
     // Animation targets
     // Smooth lift (Y) and wobble (Z rotation) on hover
@@ -79,6 +87,8 @@ const InteractiveTextField = ({
                 maxWidth={maxWidth}
                 textAlign={textAlign}
                 lineHeight={lineHeight}
+                // 长 CJK 串不换行会撑爆 maxWidth，强制按字断开
+                overflowWrap={safeOverflowWrap}
             >
                 {isActive ? (value + cursor) : (value || placeholder)}
             </Text>
@@ -292,6 +302,7 @@ const recordSubmission = () => {
 
 
 const MessagePaper = ({ position = [0, 0.05, 2], onSend }) => {
+    const { fontForText } = useSiteConfig();
     const groupRef = useRef();
     const paperRef = useRef();
     const backPaperRef = useRef(); // Back side of paper (white)
@@ -605,7 +616,7 @@ const MessagePaper = ({ position = [0, 0.05, 2], onSend }) => {
                     // Style
                     fontSize={0.05}
                     maxWidth={PAPER_WIDTH * 0.8}
-                    fontPath={FONT_PATH}
+                    fontPath={fontForText(email)}
                 />
 
                 {/* Subject Field */}
@@ -623,7 +634,7 @@ const MessagePaper = ({ position = [0, 0.05, 2], onSend }) => {
                     // Style
                     fontSize={0.05}
                     maxWidth={PAPER_WIDTH * 0.8}
-                    fontPath={FONT_PATH}
+                    fontPath={fontForText(subject)}
                 />
 
                 {/* Message Field */}
@@ -641,7 +652,7 @@ const MessagePaper = ({ position = [0, 0.05, 2], onSend }) => {
                     // Style
                     fontSize={0.045}
                     maxWidth={PAPER_WIDTH * 0.75}
-                    fontPath={FONT_PATH}
+                    fontPath={fontForText(formattedMessage)}
                     anchorY="top"
                     textAlign="left"
                     lineHeight={1.35}
@@ -654,7 +665,7 @@ const MessagePaper = ({ position = [0, 0.05, 2], onSend }) => {
                     position={[0, 0.005, 0.68]}
                     size={[0.5, 0.13]}
                     text={isSubmitting ? 'SENDING...' : 'SEND'}
-                    fontPath={FONT_PATH}
+                    fontPath={fontForText(isSubmitting ? 'SENDING...' : 'SEND')}
                 />
 
                 {/* === VALIDATION ERRORS === */}
@@ -664,7 +675,7 @@ const MessagePaper = ({ position = [0, 0.05, 2], onSend }) => {
                         rotation={[-Math.PI / 2, 0, 0]}
                         fontSize={0.035}
                         color="#cc3333"
-                        font={FONT_PATH}
+                        font={fontForText(errors.email || errors.subject || errors.message || 'Please fill all fields')}
                         anchorX="center"
                         anchorY="middle"
                     >
@@ -679,7 +690,7 @@ const MessagePaper = ({ position = [0, 0.05, 2], onSend }) => {
                         rotation={[-Math.PI / 2, 0, 0]}
                         fontSize={0.045}
                         color="#22aa44"
-                        font={FONT_PATH}
+                        font={fontForText('Message sent! ✓')}
                         anchorX="center"
                         anchorY="middle"
                     >
@@ -694,7 +705,7 @@ const MessagePaper = ({ position = [0, 0.05, 2], onSend }) => {
                         rotation={[-Math.PI / 2, 0, 0]}
                         fontSize={0.04}
                         color="#cc3333"
-                        font={FONT_PATH}
+                        font={fontForText('Failed to send. Try again.')}
                         anchorX="center"
                         anchorY="middle"
                     >

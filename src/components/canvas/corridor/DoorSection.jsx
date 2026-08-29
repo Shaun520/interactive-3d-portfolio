@@ -9,7 +9,6 @@ import { useScene } from '../../../context/SceneContext';
 import { useAchievements } from '../../../context/AchievementsContext';
 import { useAudio } from '../../../context/AudioManager';
 import { isTouchDevice } from '../../../utils/deviceDetect';
-import { siteConfig } from '../../../site.config';
 import { useRooms, useSiteConfig } from '../../../context/SiteConfigContext';
 
 // Constants from CorridorSegment
@@ -101,7 +100,7 @@ const DoorSection = ({
 
     const { unlockAchievement } = useAchievements();
     const { globalVolume, isMuted } = useAudio();
-    const { corridorTextures } = useSiteConfig();
+    const { corridorTextures, fontForText } = useSiteConfig();
 
     // Audio Refs for 3D positional sound
     const hoverAudioRef = useRef();
@@ -1064,6 +1063,8 @@ const DoorSection = ({
                         {(() => {
                             const sign = roomConfig.sign;
                             const fontSize = sign?.fontSize || 0.25;
+                            // 门牌 sign 内部宽 1.3，加 0.1 边距封顶 1.2 防溢出
+                            const signMaxWidth = 1.2;
                             if (sign?.style === 'two-line') {
                                 // 两行：优先用 sign.lines，缺省把 label 按空格拆两行
                                 const lines = sign.lines?.length >= 2
@@ -1073,22 +1074,28 @@ const DoorSection = ({
                                     return (
                                         <group position={[0, 0, 0.01]}>
                                             <Text
-                                                font={siteConfig.theme.fonts.display3D}
+                                                font={fontForText(lines[0])}
                                                 fontSize={fontSize}
                                                 color="#111111"
                                                 anchorX="center"
                                                 anchorY="bottom"
                                                 position={[0, -0.02, 0]}
+                                                maxWidth={signMaxWidth}
+                                                textAlign="center"
+                                                overflowWrap={/[\u3000-\u303f\u3400-\u9fff\uff00-\uffef]/.test(lines[0] || '') ? 'break-word' : 'normal'}
                                             >
                                                 {lines[0]}
                                             </Text>
                                             <Text
-                                                font={siteConfig.theme.fonts.display3D}
+                                                font={fontForText(lines[1])}
                                                 fontSize={fontSize}
                                                 color="#111111"
                                                 anchorX="center"
                                                 anchorY="top"
                                                 position={[0, 0.02, 0]}
+                                                maxWidth={signMaxWidth}
+                                                textAlign="center"
+                                                overflowWrap={/[\u3000-\u303f\u3400-\u9fff\uff00-\uffef]/.test(lines[1] || '') ? 'break-word' : 'normal'}
                                             >
                                                 {lines[1]}
                                             </Text>
@@ -1100,12 +1107,15 @@ const DoorSection = ({
                             if (label) {
                                 return (
                                     <Text
-                                        font={siteConfig.theme.fonts.display3D}
+                                        font={fontForText(label)}
                                         fontSize={fontSize}
                                         color="#111111"
                                         anchorX="center"
                                         anchorY="middle"
                                         position={[0, 0, 0.01]}
+                                        maxWidth={signMaxWidth}
+                                        textAlign="center"
+                                        overflowWrap={/[\u3000-\u303f\u3400-\u9fff\uff00-\uffef]/.test(label || '') ? 'break-word' : 'normal'}
                                     >
                                         {label}
                                     </Text>

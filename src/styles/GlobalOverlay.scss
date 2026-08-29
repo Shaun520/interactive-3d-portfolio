@@ -28,6 +28,57 @@
     font-style: normal;
 }
 
+// Long Cang - 手写钢笔风中文字体（DOM 回退；3D 里通过 drei <Text> font 数组直接用 /fonts/LongCang-Regular.ttf）
+@font-face {
+    font-family: 'Long Cang';
+    src: url('/fonts/LongCang-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+// ---- 自托管英文字体（@font-face 注册 family 名，DOM font-family 才能生效） ----
+@font-face {
+    font-family: 'Special Elite';
+    src: url('/fonts/SpecialElite-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Patrick Hand';
+    src: url('/fonts/PatrickHand-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Gochi Hand';
+    src: url('/fonts/GochiHand-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+// ---- 自托管中文字体 ----
+@font-face {
+    font-family: 'ZCOOL XiaoWei';
+    src: url('/fonts/ZCOOL-XiaoWei-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'ZCOOL KuaiLe';
+    src: url('/fonts/ZCOOL-KuaiLe-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
 .studio-paper-card {
     position: relative;
     background: #ffffff;
@@ -265,5 +316,111 @@
             background: rgba(26, 26, 26, 0.35);
             border-color: rgba(26, 26, 26, 0.65);
         }
+    }
+}
+
+// =============================================
+// 证书放大查看弹层（lightbox）
+// =============================================
+.certificate-zoom-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 300;
+    background: rgba(0, 0, 0, 0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: certificateZoomFade 0.2s ease;
+    padding: 1.5rem;
+    box-sizing: border-box;
+}
+
+.certificate-zoom-card {
+    position: relative;
+    max-width: min(92vw, 900px);
+    max-height: 92vh;
+    background: #ffffff;
+    border: 3px solid #1a1a1a;
+    border-radius: 2px 255px 3px 255px / 255px 5px 225px 3px;
+    padding: 1.2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.8rem;
+    box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.25);
+    animation: certificateZoomIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    img {
+        max-width: 100%;
+        max-height: 72vh;
+        object-fit: contain;
+        border: 2px solid #1a1a1a;
+    }
+}
+
+.certificate-zoom-title {
+    font-family: 'Cabin Sketch', cursive;
+    font-size: 1.2rem;
+    font-weight: 700;
+    text-align: center;
+    color: #1a1a1a;
+}
+
+.certificate-zoom-link {
+    display: inline-block;
+    padding: 0.5rem 1.2rem;
+    border: 2px solid #1a1a1a;
+    background: #1a1a1a;
+    color: #fff;
+    text-decoration: none;
+    font-weight: 700;
+    border-radius: 2px 255px 3px 255px / 255px 5px 225px 3px;
+    transition: all 0.2s;
+
+    &:hover {
+        background: #fff;
+        color: #1a1a1a;
+    }
+}
+
+.certificate-zoom-close {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.75rem;
+    width: 34px;
+    height: 34px;
+    background: transparent;
+    border: 2px solid #1a1a1a;
+    color: #1a1a1a;
+    font-size: 1.4rem;
+    line-height: 1;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: all 0.2s;
+
+    &:hover {
+        background: #1a1a1a;
+        color: #fff;
+        transform: scale(1.1);
+    }
+}
+
+@keyframes certificateZoomFade {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes certificateZoomIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
     }
 }

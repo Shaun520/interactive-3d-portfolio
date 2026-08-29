@@ -76,21 +76,34 @@ let ytPIdx = 0, blogPIdx = 0, ttPIdx = 0;
  * 把配置里的 Studio 内容条目加工为完整结构
  * @param {Array} items site.config.js 中 studio.content.items 的原始条目
  * @returns {Array} 带兜底 id 与默认纹理的完整条目
+ *
+ * 平台级统一封面：Blog / YouTube 的所有条目统一使用指定图片（无论条目是否显式写了
+ * frontTexture，都以此为准；TikTok 等其他平台仍走默认池/条目字段）。
+ * 注意：这属于默认渲染规则，不改动 site.config.js 的数据。
  */
+// Blog 全条目统一封面：0 = 无色，1 = 有色
+const BLOG_FRONT = '/textures/studio/studio-1787906363830-dbbxb6.png';
+const BLOG_PAINTED = '/textures/studio/studio-1787906370646-lggo8j.png';
+// YouTube 全条目统一封面：0 = 无色，1 = 有色
+const YT_FRONT = '/textures/studio/studio-1787906990424-xcgnip.png';
+const YT_PAINTED = '/textures/studio/studio-1787906995628-jvhxtt.png';
+
 export const buildStudioContent = (items) => (items || []).map((item, i) => {
     const platform = item.platform;
+
+    // 平台级统一封面（覆盖条目字段 / 默认池）
+    if (platform === 'blog') {
+        return { ...item, id: item.id || `blog-${i}`, frontTexture: BLOG_FRONT, paintedFrontTexture: BLOG_PAINTED };
+    }
+    if (platform === 'youtube') {
+        return { ...item, id: item.id || `youtube-${i}`, frontTexture: YT_FRONT, paintedFrontTexture: YT_PAINTED };
+    }
+
     return {
         ...item,
         id: item.id || `${platform}-${i}`,
-        frontTexture: item.frontTexture || (
-            platform === 'youtube' ? ytTextures[ytIdx++ % ytTextures.length] :
-                platform === 'blog' ? blogTextures[blogIdx++ % blogTextures.length] :
-                    ttTextures[ttIdx++ % ttTextures.length]
-        ),
-        paintedFrontTexture: item.paintedFrontTexture || (
-            platform === 'youtube' ? ytPaintedTextures[ytPIdx++ % ytPaintedTextures.length] :
-                platform === 'blog' ? blogPaintedTextures[blogPIdx++ % blogPaintedTextures.length] :
-                    ttPaintedTextures[ttPIdx++ % ttPaintedTextures.length]
-        )
+        // 仅 TikTok 等非 Blog/YouTube 平台走默认池
+        frontTexture: item.frontTexture || ttTextures[ttIdx++ % ttTextures.length],
+        paintedFrontTexture: item.paintedFrontTexture || ttPaintedTextures[ttPIdx++ % ttPaintedTextures.length],
     };
 });

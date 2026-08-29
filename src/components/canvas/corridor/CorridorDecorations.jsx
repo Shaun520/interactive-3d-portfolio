@@ -27,8 +27,7 @@ const tempEuler = new THREE.Euler();
 const tempQuat = new THREE.Quaternion();
 
 
-const CABIN_SKETCH_URL = '/fonts/CabinSketch-Regular.ttf';
-
+// 字体按内容自动选择：中文用中文字体、英文用英文字体（fontForText 全局统一）
 const PictureContent = ({ imagePath, imagePaintedPath, width, height, isPainted }) => {
     const texture = useTexture(imagePath);
     // Render nothing if no painted path, but we still call the hook unconditionally to respect hook rules
@@ -96,8 +95,9 @@ const PictureContent = ({ imagePath, imagePaintedPath, width, height, isPainted 
     );
 };
 
-const InspectableFrame = ({ frame, wallX, frameTexture, framePaintedTexture, CABIN_SKETCH_URL, setCameraOverride }) => {
+const InspectableFrame = ({ frame, wallX, frameTexture, framePaintedTexture, setCameraOverride }) => {
     const { camera, viewport } = useThree();
+    const { fontForText } = useSiteConfig();
     const groupRef = useRef();
     const frameMaterialRef = useRef();
     const framePaintedRef = useRef();
@@ -307,10 +307,13 @@ const InspectableFrame = ({ frame, wallX, frameTexture, framePaintedTexture, CAB
                         0.02
                     ]}
                     fontSize={frame.signatureSize || 0.12}
-                    font={CABIN_SKETCH_URL}
+                    font={fontForText(frame.signature)}
                     color={frame.signatureColor || "#333333"}
                     anchorX="center"
                     anchorY="middle"
+                    maxWidth={frame.width * 0.9}
+                    textAlign="center"
+                    overflowWrap={/[\u3000-\u303f\u3400-\u9fff\uff00-\uffef]/.test(frame.signature || '') ? 'break-word' : 'normal'}
                 >
                     {frame.signature}
                 </Text>
@@ -594,7 +597,6 @@ const CorridorDecorations = ({ segmentLength, zOffset, corridorWidth = 4, corrid
                     wallX={wallX}
                     frameTexture={frameTexture}
                     framePaintedTexture={framePaintedTexture}
-                    CABIN_SKETCH_URL={CABIN_SKETCH_URL}
                     setCameraOverride={setCameraOverride}
                 />
             ))}

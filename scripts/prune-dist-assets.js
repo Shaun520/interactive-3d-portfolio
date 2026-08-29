@@ -135,6 +135,17 @@ function buildAllowlist() {
         }
     }
 
+    // 3) dev 覆盖文件（site.content.dev.json）中引用的路径。
+    //    生产环境也会加载该覆盖（见 SiteConfigContext），因此它用到的
+    //    上传图片/贴图必须保留，否则生产内容会 404。
+    const devContentPath = join(PUBLIC_DIR, 'site.content.dev.json');
+    if (existsSync(devContentPath)) {
+        const devText = readFileSync(devContentPath, 'utf8');
+        for (const p of extractAssetPaths(devText)) {
+            allowed.add(p);
+        }
+    }
+
     // 校验存在性：仅保留 public/ 下真实存在的文件
     const valid = new Set();
     for (const p of allowed) {
@@ -181,18 +192,8 @@ function main() {
         }
     }
 
-    // 删除 dev 覆盖文件
-    for (const f of ['site.content.dev.json', 'site.content.dev.json.gz']) {
-        const p = join(DIST_DIR, f);
-        if (existsSync(p)) {
-            const size = statSync(p).size;
-            rmSync(p, { force: true });
-            deletedCount++;
-            deletedBytes += size;
-            deleted.push(f);
-        }
-    }
-
+    // 注意：site.content.dev.json 不再删除——生产环境（SiteConfigContext）
+    // 会加载它作为内容覆盖（编辑面板保存的配置在产物中生效）。
     // 清理可能残留的空目录
     for (const dir of ASSET_DIRS) {
         const abs = join(DIST_DIR, dir);

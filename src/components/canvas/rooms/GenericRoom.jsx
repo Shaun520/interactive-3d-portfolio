@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Text } from '@react-three/drei';
 import * as THREE from 'three';
+import { useSiteConfig } from '../../../context/SiteConfigContext';
 
 // ============================================
 // ROOM CONFIG - generic room shell dimensions
@@ -26,6 +27,7 @@ const ROOM_CONFIG = {
  * rooms[].content（按需在这里读取渲染）。
  */
 const GenericRoom = ({ label, subtitle }) => {
+    const { fontForText } = useSiteConfig();
     const { roomWidth, roomHeight, roomDepth } = ROOM_CONFIG;
 
     // 补偿：使房间地板对齐入口走廊地板高度、房间中心位于入口前方
@@ -63,11 +65,11 @@ const GenericRoom = ({ label, subtitle }) => {
             <mesh position={[roomWidth / 2, 0, 0]} rotation={[0, -Math.PI / 2, 0]} geometry={geometries.roomSideWall} material={materials.roomWall} />
 
             {/* Title (on back wall) */}
-            <Text position={[0, 2, -roomDepth / 2 + 2]} fontSize={4} color="#1a1a1a" anchorX="center" anchorY="middle" maxWidth={roomWidth * 0.8} textAlign="center">
+            <Text position={[0, 2, -roomDepth / 2 + 2]} fontSize={4} color="#1a1a1a" anchorX="center" anchorY="middle" maxWidth={roomWidth * 0.8} textAlign="center" font={fontForText(label)} overflowWrap={/[\u3000-\u303f\u3400-\u9fff\uff00-\uffef]/.test(label || '') ? 'break-word' : 'normal'}>
                 {label}
             </Text>
             {/* Subtitle */}
-            <Text position={[0, -1, -roomDepth / 2 + 2]} fontSize={0.8} color="#666666" anchorX="center" anchorY="middle" maxWidth={roomWidth * 0.7} textAlign="center">
+            <Text position={[0, -1, -roomDepth / 2 + 2]} fontSize={0.8} color="#666666" anchorX="center" anchorY="middle" maxWidth={roomWidth * 0.7} textAlign="center" font={fontForText(subtitle)} overflowWrap={/[\u3000-\u303f\u3400-\u9fff\uff00-\uffef]/.test(subtitle || '') ? 'break-word' : 'normal'}>
                 {subtitle || ''}
             </Text>
         </group>

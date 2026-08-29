@@ -1,5 +1,6 @@
 import { createContext, useContext, useMemo, useState, useCallback, useEffect } from 'react';
 import { siteConfig } from '../site.config';
+import { resolveFonts } from '../fonts/fontCatalog';
 
 /**
  * =============================================================================
@@ -52,18 +53,25 @@ export const SiteConfigProvider = ({ children }) => {
     // 走廊场景贴图（地板 / 天花板 / 墙 / 门通用件 / 装饰），编辑面板可换
     const [corridorTextures, setCorridorTextures] = useState(() => siteConfig.corridor?.textures);
 
-    // DEV：加载「编辑面板」保存的覆盖（public/site.content.dev.json）。
-    // 保存不刷新页面，靠这里在下次刷新/重新加载时恢复持久化的内容；
+    // 全局字体选择的 id（英文 / 中文），编辑面板「字体」tab 修改；解析后的实际 URL 见下方 resolveFonts
+    const [selectedFonts, setSelectedFonts] = useState(() => ({
+        selectedEnglish: siteConfig.theme?.fonts?.selectedEnglish,
+        selectedChinese: siteConfig.theme?.fonts?.selectedChinese,
+    }));
+
+    // 加载「编辑面板」保存的覆盖（public/site.content.dev.json）。
+    // 该文件在构建时会被复制进 dist，因此生产环境同样加载——
+    // 使「编辑面板保存的内容/贴图/字体选择」在打包产物中生效（而非默认配置）。
     // 结构：{ content: { roomId: {...} }, rooms: { roomId: { label, side, ... } } }
-    // 生产构建忽略（不 fetch，使用 site.config.js 默认值）。
     //
     // 合并策略：以 site.config.js 的默认值为底，dev.json 中存在的字段浅覆盖
     // → 新增字段（如 textures.doorLeft/doorRight/window）即使 dev.json 旧版没存，
     //    也不会被「整体替换」清掉；用户改过的字段（sign / music / 已存过的贴图）正常生效。
     useEffect(() => {
-        if (!import.meta.env.DEV) return;
         let cancelled = false;
-        fetch('/site.content.dev.json')
+        // dev 下加时间戳绕开 vite 静态缓存（保存后刷新拿最新）；生产用 CDN 缓存即可
+        const qs = import.meta.env.DEV ? `?t=${Date.now()}` : '';
+        fetch(`/site.content.dev.json${qs}`)
             .then((res) => (res.ok ? res.json() : null))
             .then((data) => {
                 if (cancelled || !data) return;
@@ -89,6 +97,12 @@ export const SiteConfigProvider = ({ children }) => {
                         const base = prev || siteConfig.corridor?.textures || {};
                         return { ...base, ...(contentMap.corridorTextures || {}) };
                     });
+                }
+                // 全局字体选择恢复（themeFonts 键）
+                // 保存时写到 JSON 顶层 themeFonts（见 vite.config saveRoomContentPlugin），不是 data.content 里
+                const savedFonts = data.themeFonts || contentMap.themeFonts;
+                if (savedFonts !== undefined && savedFonts.selectedEnglish !== undefined) {
+                    setSelectedFonts((prev) => ({ ...prev, ...savedFonts }));
                 }
                 setRooms((prev) => prev.map((r) => {
                     let next = r;
@@ -154,12 +168,51 @@ export const SiteConfigProvider = ({ children }) => {
         );
     }, []);
 
+    /**
+     * 更新全局字体选择（实时预览用）
+     * @param {'selectedEnglish'|'selectedChinese'} field
+     * @param {string} fontId fontCatalog 里的 id
+     */
+    const updateThemeFont = useCallback((field, value) => {
+        setSelectedFonts((prev) => ({ ...prev, [field]: value }));
+    }, []);
+
     // 编辑面板「当前聚焦的 Studio 条目 id」：StudioRoom 据此把监视器塔定位到该条目
     const [studioFocusId, setStudioFocusId] = useState(null);
+    // 预览区选中的 Studio 条目 id：仅用于右侧编辑区同步选中下标，
+    // 不触发转塔定位 / 不显示聚焦边框（与 studioFocusId 相互独立）
+    const [previewSelectedId, setPreviewSelectedId] = useState(null);
+
+    // 解析选中的字体 id → 实际 3D URL 与 DOM css（供各消费点使用）
+    const resolvedFonts = useMemo(
+        () => resolveFonts(selectedFonts.selectedEnglish, selectedFonts.selectedChinese),
+        [selectedFonts.selectedEnglish, selectedFonts.selectedChinese]
+    );
+
+    // 按内容自动选字体：含中日韩字符 → 中文字体；否则 → 英文字体（全局统一判断）
+    const fontForText = useCallback((text) => {
+        const s = String(text ?? '');
+        return /[\u3000-\u303f\u3400-\u9fff\uff00-\uffef]/.test(s)
+            ? resolvedFonts.chineseFont3D
+            : resolvedFonts.englishFont3D;
+    }, [resolvedFonts.englishFont3D, resolvedFonts.chineseFont3D]);
+
+    // DOM 版同上：返回所选字体的 font-family 字符串（供弹窗等 DOM 文本按内容换字）
+    const fontForDom = useCallback((text) => {
+        const s = String(text ?? '');
+        return /[\u3000-\u303f\u3400-\u9fff\uff00-\uffef]/.test(s)
+            ? resolvedFonts.domCss
+            : (resolvedFonts.englishDomCss || "'Cabin Sketch', cursive");
+    }, [resolvedFonts.domCss, resolvedFonts.englishDomCss]);
+
+    // 全局 DOM 字体跟随：把选中的字体族写到 body，让所有 DOM 文字随字体选择变化
+    useEffect(() => {
+        document.body.style.fontFamily = resolvedFonts.domCss;
+    }, [resolvedFonts.domCss]);
 
     const value = useMemo(
-        () => ({ ...siteConfig, rooms, updateRoom, updateRoomContent, homeContent, updateHomeContent, outdoorContent, updateOutdoorContent, corridorTextures, updateCorridorTexture, studioFocusId, setStudioFocusId }),
-        [rooms, updateRoom, updateRoomContent, homeContent, updateHomeContent, outdoorContent, updateOutdoorContent, corridorTextures, updateCorridorTexture, studioFocusId]
+        () => ({ ...siteConfig, rooms, updateRoom, updateRoomContent, homeContent, updateHomeContent, outdoorContent, updateOutdoorContent, corridorTextures, updateCorridorTexture, studioFocusId, setStudioFocusId, previewSelectedId, setPreviewSelectedId, selectedFonts, updateThemeFont, ...resolvedFonts, fontForText, fontForDom }),
+        [rooms, updateRoom, updateRoomContent, homeContent, updateHomeContent, outdoorContent, updateOutdoorContent, corridorTextures, updateCorridorTexture, studioFocusId, setStudioFocusId, previewSelectedId, setPreviewSelectedId, selectedFonts, updateThemeFont, resolvedFonts, fontForText, fontForDom]
     );
 
     return (
