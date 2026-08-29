@@ -18,6 +18,17 @@ Welcome to the open-source repository of **Tomasz "ITom" Szmajda's** interactive
 > [!NOTE]
 > Ensure hardware acceleration is enabled in your browser settings to experience the smooth 60 FPS high-tier rendering of this application.
 
+---
+
+## 🎬 Promo Video
+
+<video controls width="100%">
+  <source src="media/promo.mp4" type="video/mp4" />
+  Your browser does not support the video tag. <a href="media/promo.mp4">Download the video</a>.
+</video>
+
+---
+
 ## 🚀 Key Performance Architectures (2026 Standards)
 
 This application is strictly optimized for cross-device operability, achieving zero lag spikes even on mobile processors through several bespoke architectural implementations:
