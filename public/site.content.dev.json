@@ -1,0 +1,761 @@
+{
+  "content": {
+    "gallery": {
+      "projects": [
+        {
+          "id": "monetune",
+          "title": "Quota-Flow",
+          "front": "/textures/gallery/monetuneprzod.webp",
+          "painted": "/textures/gallery/monetuneprzod_painted.webp",
+          "url": "https://github.com/Shaun520/quota-flow",
+          "description": "一站式 AI 视频生成免费额度调度平台,\n豆包 / 千问 / 元宝 / Dola / 智谱清言 / 智谱\n等9 家厂商的免费视频生成额度,\n聚合成一个可调度、可观测、可共享的池子",
+          "techStack": [
+            "/textures/gallery/gallery-1787889096673-5hraj0.webp",
+            "/textures/gallery/gallery-1787889164660-v2lfss.webp",
+            "/textures/gallery/gallery-1787891555324-zgqt5m.png",
+            "/textures/gallery/csslogo.webp"
+          ]
+        },
+        {
+          "id": "timber",
+          "title": "Narr-Light",
+          "front": "/textures/gallery/timberkittyprzod.webp",
+          "painted": "/textures/gallery/timberkittyprzod_painted.webp",
+          "url": "https://github.com/Shaun520/Narr-Light",
+          "description": "叙光是一个 AI 驱动的剧本杀全生命周期一站式平台，\n覆盖「创作辅助 - 内容生产 - 分发变现 - 用户社区」\n全链路，核心是用 AI 解决剧本杀行业「创作门槛高、\n生产周期长、美术成本高、逻辑校验难」四大痛点\n",
+          "techStack": [
+            "/textures/gallery/jslogo.webp",
+            "/textures/gallery/htmllogo.webp",
+            "/textures/gallery/csslogo.webp",
+            "/textures/gallery/gallery-1787891699227-a46b1z.png"
+          ]
+        },
+        {
+          "id": "young",
+          "title": "Astra-Studio",
+          "front": "/textures/gallery/youngmultiprzod.webp",
+          "painted": "/textures/gallery/youngmultiprzod_painted.webp",
+          "url": "https://github.com/Shaun520/Astra-Studio",
+          "description": "基于RAG与Multi-Agent架构的企业级AI工作台，\n融合联网搜索/本地知识库双引擎与持久化记忆，\n通过可调用的Skills和Tools工具集，\n实现从知识库检索到文件生成的全链路自动化创作",
+          "techStack": [
+            "/textures/gallery/reactlogo.webp",
+            "/textures/gallery/tailwindlogo.webp",
+            "/textures/gallery/htmllogo.webp",
+            "/textures/gallery/netlifylogo.webp"
+          ]
+        },
+        {
+          "id": "bio",
+          "title": "Shaun-Resume",
+          "front": "/textures/gallery/bioprzod.webp",
+          "painted": "/textures/gallery/bioprzod_painted.webp",
+          "url": "https://github.com/Shaun520/Shaun-Resume",
+          "description": "一款面向个人用户的现代化在线简历制作与导出平台，\n旨在以“结构化编辑 + 多模板渲染 + 一键导出”为核心，\n降低用户制作专业简历的成本，\n同时预留模板生态与 AI 增强能力的扩展空间",
+          "techStack": [
+            "/textures/gallery/htmllogo.webp",
+            "/textures/gallery/csslogo.webp",
+            "/textures/gallery/jslogo.webp",
+            "/textures/gallery/gallery-1787891814052-54yxrt.png"
+          ]
+        },
+        {
+          "id": "project-1787887228001",
+          "title": "3d-portfolio",
+          "front": "/textures/gallery/monetuneprzod.webp",
+          "painted": "/textures/gallery/monetuneprzod_painted.webp",
+          "url": "https://www.shaun.asia/",
+          "description": "交互式 3D WebGL 作品集\n一条手绘黑白风格的无限走廊\n其上的每一扇门都通往沉浸式房间\n从 ITomPoland/portfolio-itom 重构而来",
+          "techStack": [
+            "/textures/gallery/htmllogo.webp",
+            "/textures/gallery/csslogo.webp",
+            "/textures/gallery/jslogo.webp"
+          ]
+        },
+        {
+          "id": "project-1790137251330",
+          "title": "Video-Downloader",
+          "front": "/textures/gallery/monetuneprzod.webp",
+          "painted": "/textures/gallery/monetuneprzod_painted.webp",
+          "url": "https://github.com/Shaun520/ai-video-downloader",
+          "description": "AI 视频下载器：粘贴链接即可解析下载 YouTube / B 站 / 抖音等多平台视频，支持直链下载、AI 内容总结、思维导图、字幕提取导出与视频问答",
+          "techStack": [
+            "/textures/gallery/htmllogo.webp",
+            "/textures/gallery/csslogo.webp",
+            "/textures/gallery/jslogo.webp"
+          ]
+        },
+        {
+          "id": "project-1790137540334",
+          "title": "AI-hot-monitor",
+          "front": "/textures/gallery/monetuneprzod.webp",
+          "painted": "/textures/gallery/monetuneprzod_painted.webp",
+          "url": "https://github.com/Shaun520/ai-hot-monitor",
+          "description": "基于 AI 的全网热点监控工具\n聚合 Bing/HN/B站等 8+ 信息源，AI 真假识别与相关性分析，WebSocket 实时推送与邮件通知",
+          "techStack": [
+            "/textures/gallery/htmllogo.webp",
+            "/textures/gallery/csslogo.webp",
+            "/textures/gallery/jslogo.webp"
+          ]
+        }
+      ]
+    },
+    "about": {
+      "intro": {
+        "name": "Shaun",
+        "brand": "yangquan",
+        "avatar": "/textures/about/about-1787895203547-1yaxbl.png",
+        "motto1": "\"Those who chase the light",
+        "motto2": "will eventually shine brightly.\""
+      },
+      "awards": {
+        "featured": {
+          "id": "award-featured",
+          "layout": "certificate_grid",
+          "title": "Featured Projects Collection",
+          "items": [
+            {
+              "label": "Featured - Awwwards",
+              "date": "May 2025",
+              "image": "/textures/about/FEATURED.webp",
+              "url": "https://awwwards.com"
+            },
+            {
+              "label": "Featured - CSS Design Awards",
+              "date": "June 2025",
+              "image": "/textures/about/FEATURED.webp",
+              "url": "https://cssdesignawards.com"
+            },
+            {
+              "label": "Featured - The FWA",
+              "date": "July 2025",
+              "image": "/textures/about/FEATURED.webp",
+              "url": "https://thefwa.com"
+            },
+            {
+              "label": "Featured - Behance",
+              "date": "August 2025",
+              "image": "/textures/about/FEATURED.webp",
+              "url": "https://behance.net"
+            }
+          ],
+          "platformConfig": {
+            "label": "HONOR",
+            "color": "#1a1a1a",
+            "icon": "⭐"
+          }
+        },
+        "sotd": {
+          "id": "award-sotd",
+          "layout": "certificate_grid",
+          "title": "Site of the Day Awards",
+          "items": [
+            {
+              "label": "计算机设计大赛",
+              "date": "2025 06.12",
+              "image": "/textures/about/about-1787896054900-kkvi3p.jpg",
+              "url": "",
+              "clickAction": "zoom"
+            },
+            {
+              "label": "物联网应用创新竞赛",
+              "date": "2025 11.3",
+              "image": "/textures/about/about-1787895336753-8cvqoc.jpg",
+              "url": "",
+              "clickAction": "zoom"
+            },
+            {
+              "label": "网络技术挑战赛",
+              "date": "2025 07.01",
+              "image": "/textures/about/about-1787896137755-4yk60k.jpg",
+              "url": ""
+            },
+            {
+              "label": "电子商务三创赛",
+              "date": "2025 05.22",
+              "image": "/textures/about/about-1787896570957-6ki9fi.jpg",
+              "url": "",
+              "clickAction": "zoom"
+            }
+          ],
+          "platformConfig": {
+            "label": "AWARD",
+            "color": "#1a1a1a",
+            "icon": "🏆"
+          }
+        },
+        "sotm": {
+          "id": "award-sotm",
+          "layout": "certificate_grid",
+          "title": "Site of the Month Awards",
+          "items": [],
+          "platformConfig": {
+            "label": "AWARD",
+            "color": "#1a1a1a",
+            "icon": "📅"
+          }
+        },
+        "other": {
+          "id": "award-other",
+          "layout": "certificate_grid",
+          "title": "Other Awards",
+          "items": [
+            {
+              "label": "普通话证书",
+              "clickAction": "zoom",
+              "image": "/textures/about/about-1787901003321-ggb8z5.jpg",
+              "date": "2025 05.10"
+            },
+            {
+              "label": "短视频大赛",
+              "date": "2025 05.01",
+              "image": "/textures/about/about-1787897981401-sqr1d0.jpg",
+              "url": "",
+              "clickAction": "zoom"
+            },
+            {
+              "label": "CET-6",
+              "date": "2025 06.01",
+              "image": "/textures/about/about-1787901021369-xztlgg.jpg",
+              "url": "",
+              "clickAction": "zoom"
+            }
+          ],
+          "platformConfig": {
+            "label": "PRESTIGE",
+            "color": "#1a1a1a",
+            "icon": "👑"
+          }
+        }
+      },
+      "journey": {
+        "title": "JOURNEY",
+        "subtitle": "My path so far...",
+        "islands": [
+          {
+            "id": "uo",
+            "label": "HNUST",
+            "period": "2023-NOW",
+            "image": "/textures/about/about-1787902446393-j3pmx2.png"
+          },
+          {
+            "id": "freelance",
+            "label": "FREELANCE",
+            "period": "2026-NOW",
+            "image": "/textures/about/freelancewyspa.webp"
+          }
+        ]
+      },
+      "skills": {
+        "title": "SKILLS",
+        "subtitle": "Technologies I love working with",
+        "items": [
+          {
+            "label": "React",
+            "texture": "/textures/about/reactduzybalon.webp",
+            "paintedTexture": "/textures/about/reactduzybalon_painted.webp",
+            "size": "large",
+            "x": -2.5,
+            "y": 2,
+            "z": 0.3,
+            "phase": 0
+          },
+          {
+            "label": "Three.js",
+            "texture": "/textures/about/threejsduzybalon.webp",
+            "paintedTexture": "/textures/about/threejsduzybalon_painted.webp",
+            "size": "large",
+            "x": 2.5,
+            "y": 2.5,
+            "z": 0.2,
+            "phase": 1.5
+          },
+          {
+            "label": "GSAP",
+            "texture": "/textures/about/GSAPduzybalon.webp",
+            "paintedTexture": "/textures/about/GSAPduzybalon_painted.webp",
+            "size": "large",
+            "x": 0,
+            "y": 3,
+            "z": 0.5,
+            "phase": 3
+          },
+          {
+            "label": "JavaScript",
+            "texture": "/textures/about/JSSREDNIBALON.webp",
+            "paintedTexture": "/textures/about/JSSREDNIBALON_painted.webp",
+            "size": "medium",
+            "x": -4,
+            "y": 1,
+            "z": -0.3,
+            "phase": 0.8
+          },
+          {
+            "label": "CSS",
+            "texture": "/textures/about/csssrednibalon.webp",
+            "paintedTexture": "/textures/about/csssrednibalon_painted.webp",
+            "size": "medium",
+            "x": 4,
+            "y": 1.5,
+            "z": -0.2,
+            "phase": 2.2
+          },
+          {
+            "label": "Next.js",
+            "texture": "/textures/about/nextjssrednibalon.webp",
+            "paintedTexture": "/textures/about/nextjssrednibalon_painted.webp",
+            "size": "medium",
+            "x": 0,
+            "y": 0.5,
+            "z": -0.4,
+            "phase": 4
+          },
+          {
+            "label": "HTML",
+            "texture": "/textures/about/htmlmalybalon.webp",
+            "paintedTexture": "/textures/about/htmlmalybalon_painted.webp",
+            "size": "small",
+            "x": -5.5,
+            "y": 2.5,
+            "z": -0.8,
+            "phase": 1.2
+          },
+          {
+            "label": "Git",
+            "texture": "/textures/about/gitmalybalon.webp",
+            "paintedTexture": "/textures/about/gitmalybalon_painted.webp",
+            "size": "small",
+            "x": 5.5,
+            "y": 3,
+            "z": -0.7,
+            "phase": 2.8
+          },
+          {
+            "label": "Figma",
+            "texture": "/textures/about/figmamalybalon.webp",
+            "paintedTexture": "/textures/about/figmamalybalon_painted.webp",
+            "size": "small",
+            "x": -3,
+            "y": 4.5,
+            "z": -0.5,
+            "phase": 3.5
+          },
+          {
+            "label": "Spring Boot",
+            "texture": "/textures/about/about-1787902114605-z6oldd.png",
+            "paintedTexture": "/textures/about/about-1787902128182-z2p416.png",
+            "size": "large",
+            "x": 3.5,
+            "y": 4,
+            "z": -0.6,
+            "phase": 4.5
+          },
+          {
+            "label": "Vue",
+            "texture": "/textures/about/about-1787901468490-39uu67.png",
+            "paintedTexture": "/textures/about/about-1787901616764-2tw87f.png",
+            "size": "large",
+            "x": 0,
+            "y": 2,
+            "z": 0,
+            "phase": 4.714704773910946
+          }
+        ]
+      }
+    },
+    "contact": {
+      "email": "2316520653@qq.com",
+      "socials": [
+        {
+          "id": "linkedin",
+          "label": "Kuaishou",
+          "url": "https://v.kuaishou.com/nsAdc31J"
+        },
+        {
+          "id": "github",
+          "label": "GITHUB",
+          "url": "https://github.com/Shaun520"
+        },
+        {
+          "id": "facebook",
+          "label": "Douyin",
+          "url": "https://v.douyin.com/EHanhtD3Vqo/"
+        },
+        {
+          "id": "instagram",
+          "label": "Bilibili",
+          "url": "https://b23.tv/4PqHrHb"
+        }
+      ]
+    },
+    "outdoor": {
+      "sign": "PORTFOLIO",
+      "tutorialTitle": "EXPLORER",
+      "tutorialLabel": "Click a door to enter. Audio is currently",
+      "bugText": "BUG FIXED!",
+      "music": "/sounds/music-1790136984276-9runis.mp3",
+      "textures": {
+        "sign": "/textures/entrance/sign.webp",
+        "frame": "/textures/doors/frame_sketch.webp",
+        "doorLeft": "/textures/doors/door_left_sketch.webp",
+        "doorRight": "/textures/doors/door_right_sketch.webp",
+        "doorLeftPainted": "/textures/doors/door_left_painted.webp",
+        "doorRightPainted": "/textures/doors/door_right_painted.webp",
+        "handleLeft": "/textures/doors/handle_left_sketch.webp",
+        "handleRight": "/textures/doors/handle_right_sketch.webp",
+        "handleLeftPainted": "/textures/doors/handle_left_painted.webp",
+        "handleRightPainted": "/textures/doors/handle_right_painted.webp",
+        "window": "/textures/entrance/window_sketch.webp",
+        "avatarWindow": "/textures/entrance/entrance-1790137160485-y5r1x1.png",
+        "catFrontBody": "/textures/entrance/cat_front_body.webp",
+        "mouseHanging": "/textures/entrance/mouse_hanging.webp",
+        "bug": "/textures/entrance/bug_sketch.webp",
+        "inkSplash": "/images/ink-splash.webp",
+        "brickWall": "/textures/entrance/wall_bricks_2.webp",
+        "stonePath": "/textures/entrance/stone-path.webp",
+        "tree": "/textures/entrance/tree_sketch.webp",
+        "potDuck": "/textures/entrance/pot_with_duck.webp"
+      }
+    },
+    "home": {
+      "title": "Shaun",
+      "tagline": "< creative developer />",
+      "avatarFrames": [
+        "/textures/corridor/corridor-1787840325299-z19bra.png"
+      ],
+      "frames": [
+        {
+          "id": "frame-1",
+          "relZ": 10,
+          "side": "right",
+          "width": 2.5,
+          "height": 1.400560224089636,
+          "y": 0.3,
+          "offsetFromWall": 0.1,
+          "image": "/textures/corridor/corridor-1787899393623-ktveqn.png",
+          "imageWidth": 1.1,
+          "imageHeight": 1.1,
+          "signature": ""
+        },
+        {
+          "id": "frame-2",
+          "relZ": 25,
+          "side": "left",
+          "width": 2.5,
+          "height": 1.400560224089636,
+          "y": 0.2,
+          "offsetFromWall": 0.1,
+          "image": "/textures/corridor/rysuneknaobrazek3.webp",
+          "imageWidth": 1.7,
+          "imageHeight": 1,
+          "signature": ""
+        },
+        {
+          "id": "frame-1787899766485",
+          "relZ": 40,
+          "side": "right",
+          "width": 2.5,
+          "height": 1.400560224089636,
+          "y": 0.3,
+          "offsetFromWall": 0,
+          "image": "/textures/corridor/corridor-1787899775351-ud1kzx.png",
+          "imageWidth": 1.1,
+          "imageHeight": 1.1,
+          "signature": ""
+        },
+        {
+          "id": "frame-1787899808227",
+          "relZ": 55,
+          "side": "left",
+          "width": 2.5,
+          "height": 1.400560224089636,
+          "y": 0.3,
+          "offsetFromWall": 0,
+          "image": "/textures/corridor/corridor-1787900270457-qervlh.png",
+          "imageWidth": 1.1,
+          "imageHeight": 1.1,
+          "signature": ""
+        }
+      ]
+    },
+    "studio": {
+      "items": [
+        {
+          "id": "yt-004",
+          "platform": "youtube",
+          "title": "Shaders for Beginners",
+          "description": "Introduction to GLSL shaders in WebGL and Three.js.",
+          "thumbnail": null,
+          "url": "",
+          "date": "2025-12-15",
+          "views": "1.8K",
+          "duration": "18:33",
+          "showLink": false
+        },
+        {
+          "id": "yt-008",
+          "platform": "youtube",
+          "title": "I published my first project that went live —— quota-flow.",
+          "description": "",
+          "thumbnail": null,
+          "url": "",
+          "date": "2025-10-28",
+          "views": "1.9K",
+          "duration": "18:45",
+          "showLink": false,
+          "frontTexture": "/textures/studio/studio-1787906990424-xcgnip.png",
+          "paintedFrontTexture": "/textures/studio/studio-1787906995628-jvhxtt.png"
+        },
+        {
+          "id": "blog-002",
+          "platform": "blog",
+          "title": "The Hand-Drawn Aesthetic",
+          "description": "How I achieved a sketch-like visual style using shaders.",
+          "thumbnail": null,
+          "url": "",
+          "date": "2025-12-20",
+          "readTime": "8 min",
+          "showLink": false
+        },
+        {
+          "id": "blog-003",
+          "platform": "blog",
+          "title": "Optimizing 3D for the Web",
+          "description": "Performance tips for smooth 60fps 3D experiences.",
+          "thumbnail": null,
+          "url": "",
+          "date": "2025-12-10",
+          "readTime": "6 min",
+          "showLink": false
+        },
+        {
+          "id": "blog-004",
+          "platform": "blog",
+          "title": "Creative Coding Journey",
+          "description": "My path from traditional dev to creative development.",
+          "thumbnail": null,
+          "url": "",
+          "date": "2025-11-25",
+          "readTime": "10 min",
+          "showLink": false
+        },
+        {
+          "id": "blog-005",
+          "platform": "blog",
+          "title": "The Future of Web Experiences",
+          "description": "Where I think interactive web is heading.",
+          "thumbnail": null,
+          "url": "",
+          "date": "2025-11-15",
+          "readTime": "7 min",
+          "showLink": false
+        },
+        {
+          "id": "tt-001",
+          "platform": "tiktok",
+          "title": "Like playing ping-pong",
+          "description": "who can i play with.",
+          "frontTexture": "/textures/studio/studio-1787904800603-vut4jb.png",
+          "paintedFrontTexture": "/textures/studio/studio-1787904808719-786wco.png",
+          "thumbnail": null,
+          "url": "",
+          "date": "2026-01-09",
+          "views": "15.2K",
+          "likes": "1.2K",
+          "showLink": false
+        },
+        {
+          "id": "tt-002",
+          "platform": "tiktok",
+          "title": "A day worth celebrating.🎉",
+          "description": "The first video on Douyin (TikTok) has received over 500 views.",
+          "thumbnail": null,
+          "url": "",
+          "date": "2026-08-017",
+          "views": "8.5K",
+          "likes": "756",
+          "showLink": false,
+          "frontTexture": "/textures/studio/studio-1787904392828-f6aaw7.png",
+          "paintedFrontTexture": "/textures/studio/studio-1787904399253-h7jc3d.png"
+        },
+        {
+          "id": "tt-003",
+          "platform": "tiktok",
+          "title": "\"My courage is really chubby.\"",
+          "description": "",
+          "thumbnail": null,
+          "url": "",
+          "date": "2025-08-28",
+          "views": "22.1K",
+          "likes": "3.4K",
+          "showLink": false,
+          "frontTexture": "/textures/studio/studio-1787905381995-lbun1k.png",
+          "paintedFrontTexture": "/textures/studio/studio-1787905386024-3r54fh.png"
+        },
+        {
+          "id": "tt-004",
+          "platform": "tiktok",
+          "title": "Every Mile Is a Victory",
+          "description": "Running isn't just about speed or distance. ",
+          "thumbnail": null,
+          "url": "",
+          "date": "2025-12-18",
+          "views": "12.3K",
+          "likes": "1.1K",
+          "showLink": false,
+          "frontTexture": "/textures/studio/studio-1787904697337-gmlfqf.png",
+          "paintedFrontTexture": "/textures/studio/studio-1787904709286-9w9bmj.png"
+        },
+        {
+          "id": "tt-005",
+          "platform": "tiktok",
+          "title": "The pain of finals week. 😅",
+          "description": "examation is my enemy. I hate it !",
+          "thumbnail": null,
+          "url": "https://www.tiktok.com/@itompoland",
+          "date": "2025-12-12",
+          "views": "45.2K",
+          "likes": "5.8K",
+          "frontTexture": "/textures/studio/studio-1787893705400-6xidux.png",
+          "paintedFrontTexture": "/textures/studio/studio-1787893724269-m3622b.png",
+          "showLink": false
+        },
+        {
+          "id": "tt-006",
+          "platform": "tiktok",
+          "title": "Introduction for myself",
+          "description": "I'm s yangquan. My English name is Shaun. very nice to meet you",
+          "thumbnail": null,
+          "url": "",
+          "date": "2023-09-01",
+          "views": "18.7K",
+          "likes": "2.1K",
+          "frontTexture": "/textures/studio/studio-1787892280112-ogd1js.png",
+          "paintedFrontTexture": "/textures/studio/studio-1787892285525-7gmbfg.png",
+          "showLink": false
+        },
+        {
+          "id": "tt-007",
+          "platform": "tiktok",
+          "title": "I want to make an AI comic drama.",
+          "description": "",
+          "thumbnail": null,
+          "url": "",
+          "date": "2026-08",
+          "views": "33.4K",
+          "likes": "4.2K",
+          "frontTexture": "/textures/studio/studio-1787905667678-b2u2i3.png",
+          "paintedFrontTexture": "/textures/studio/studio-1787905676696-290rcx.png",
+          "showLink": false
+        },
+        {
+          "id": "tt-009",
+          "platform": "tiktok",
+          "title": "Loading some ideas 🔄",
+          "description": "think about ideas ?  Is there a creative idea which i want to do with me. Please contact with me !",
+          "thumbnail": null,
+          "url": "",
+          "date": "2026-07-15",
+          "views": "14.3K",
+          "likes": "2.4K",
+          "frontTexture": "/textures/studio/studio-1787903817361-grws42.png",
+          "paintedFrontTexture": "/textures/studio/studio-1787903822896-pmgp7c.png",
+          "showLink": false
+        },
+        {
+          "id": "tt-012",
+          "platform": "tiktok",
+          "title": "Finding a job is a big problem ",
+          "description": "Is there a job that’s like a pie falling from the sky for me?",
+          "thumbnail": null,
+          "url": "",
+          "date": "2026-09-01",
+          "views": "31.8K",
+          "likes": "4.0K",
+          "frontTexture": "/textures/studio/studio-1787904915465-5ums7w.png",
+          "paintedFrontTexture": "/textures/studio/studio-1787904925693-ddkhbf.png",
+          "showLink": false
+        }
+      ]
+    }
+  },
+  "rooms": {
+    "gallery": {
+      "label": "THE GALLERY",
+      "shortLabel": "Gallery",
+      "side": "left",
+      "relativeZ": -18,
+      "textures": {
+        "door": "/textures/corridor/doors/drzwiprojekty.webp",
+        "doorPainted": "/textures/corridor/doors/drzwiprojekty_painted.webp"
+      }
+    },
+    "studio": {
+      "label": "THE STUDIO",
+      "shortLabel": "Studio",
+      "side": "right",
+      "relativeZ": -32,
+      "textures": {
+        "door": "/textures/corridor/doors/drzwisocial.webp",
+        "doorPainted": "/textures/corridor/doors/drzwisocial_painted.webp"
+      }
+    },
+    "about": {
+      "label": "THE ABOUT",
+      "shortLabel": "About",
+      "side": "left",
+      "relativeZ": -48,
+      "textures": {
+        "door": "/textures/corridor/doors/drzwiabout.webp",
+        "doorPainted": "/textures/corridor/doors/drzwiabout_painted.webp"
+      }
+    },
+    "contact": {
+      "label": "CONTACT",
+      "shortLabel": "Contact",
+      "side": "right",
+      "relativeZ": -62,
+      "textures": {
+        "door": "/textures/corridor/doors/drzwikontakt.webp",
+        "doorPainted": "/textures/corridor/doors/drzwikontakt_painted.webp"
+      }
+    }
+  },
+  "corridorTextures": {
+    "floor": "/textures/corridor/kawalekpodlogi.webp",
+    "ceiling": "/textures/corridor/ceiling_texture.webp",
+    "wall": "/textures/corridor/wall_texture.webp",
+    "baseboard": "/textures/corridor/texturadoprogow.webp",
+    "frame": "/textures/corridor/ramkanazdjecieduza.webp",
+    "framePainted": "/textures/corridor/ramkanazdjecieduza_painted.webp",
+    "standingFrame": "/textures/corridor/ramkanazdjeciemala.webp",
+    "tree": "/textures/corridor/drzewkowdoniczce.webp",
+    "grate": "/textures/corridor/kratkawentylacyjna.webp",
+    "flower": "/textures/corridor/kwiatekwdoniczce.webp",
+    "lampGrille": "/textures/corridor/kratanalampy.webp",
+    "lampSide": "/textures/corridor/bokilampy.webp",
+    "wood": "/textures/corridor/texturadrewnadonozekbiurka.webp",
+    "tableTop": "/textures/corridor/gorastolika.webp",
+    "cabinetFront": "/textures/corridor/szafkaprzod.webp",
+    "cabinetRest": "/textures/corridor/szafkaprzodgora.webp",
+    "doorFrame": "/textures/corridor/doors/ramkasingledoors.webp",
+    "doorHandle": "/textures/corridor/doors/klamkadodrzwi.webp",
+    "doorHandlePainted": "/textures/corridor/doors/klamkadodrzwi_painted.webp",
+    "doorBack": "/textures/corridor/doors/backsingledoors.webp",
+    "arrow": "/textures/corridor/strzalka.webp",
+    "emptySign": "/textures/corridor/pustatabliczka.webp",
+    "segFrame": "/textures/corridor/doors/frame_sketch.webp",
+    "segDoorLeft": "/textures/corridor/doors/doorrleft.webp",
+    "segDoorRight": "/textures/corridor/doors/dorright.webp",
+    "segHandleLeft": "/textures/corridor/doors/handle_left_sketch.webp",
+    "segHandleRight": "/textures/corridor/doors/handle_right_sketch.webp",
+    "segDoorBack": "/textures/corridor/doors/door_back.webp",
+    "segEdge": "/textures/corridor/doors/pien.webp",
+    "decorWhileTrue": "/textures/corridor/decorations/while_true_loop.webp",
+    "decorCoffee": "/textures/corridor/decorations/coffee_debug.webp",
+    "decorIdea": "/textures/corridor/decorations/idea_process.webp"
+  },
+  "themeFonts": {
+    "selectedEnglish": "patrick-hand",
+    "selectedChinese": "zcool-kuai-le"
+  }
+}

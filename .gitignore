@@ -31,6 +31,3 @@ dist-ssr
 
 # Trae workspace docs (local only)
 .trae/
-
-# Editor-generated runtime content override (ContentEditorPanel dev tool)
-public/site.content.dev.json
