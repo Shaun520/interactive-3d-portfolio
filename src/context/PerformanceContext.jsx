@@ -20,7 +20,7 @@ const SETTINGS = {
     particleCount: 1.0, // 100% particles
   },
   [TIERS.MEDIUM]: {
-    dpr: [1, 1.5], // Cap at 1.5x on mobile to balance quality and GPU fillrate
+    dpr: [1, 2], // Desktop-quality rendering on mobile (matches physical pixel density 2x)
     shadows: false, // Disable shadows for better mobile performance
     antialias: true,
     powerPreference: "default",
@@ -29,7 +29,7 @@ const SETTINGS = {
     particleCount: 0.6, // 60% particles
   },
   [TIERS.LOW]: {
-    dpr: [0.8, 1], // Minimum 0.8x pixel density to avoid extreme pixelation
+    dpr: [1, 1.5], // Never drop below 1x; cap at 1.5x to keep text/edges crisp-ish
     shadows: false, // Disable shadows completely
     antialias: false, // Disable AA to maximize FPS
     powerPreference: "low-power",

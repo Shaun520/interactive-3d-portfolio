@@ -46,6 +46,8 @@ import {
   filterTexturesByDevice
 } from './config/texturePreloadList';
 import { TextureLoader } from 'three';
+// 全局纹理采样质量：启用各向异性过滤（需在所有贴图加载前引入）
+import { setGpuMaxAnisotropy } from './utils/textureQuality';
 
 // Standard Browser-level Image Preloader (for <img> tags)
 const preloadBrowserImage = (path) => {
@@ -206,6 +208,7 @@ function AppContent() {
               }}
               dpr={settings.dpr}
               shadows={settings.shadows}
+              onCreated={({ gl }) => setGpuMaxAnisotropy(gl)}
             >
               {/* Theme colors: clear color + fog from site config */}
               <SceneThemeBridge />
