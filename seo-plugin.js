@@ -1,11 +1,97 @@
-import { createClient } from '@sanity/client';
+﻿import { readFileSync } from 'node:fs';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const sanityClient = createClient({
-    projectId: 'kv5wjjmj',
-    dataset: 'production',
-    useCdn: true,
-    apiVersion: '2024-03-01',
-});
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// ===== 本地 SEO 站点信息（替代原先的 Sanity globalInfo） =====
+const SITE_URL = 'https://shaun.dev';
+
+const SITE_META = {
+    siteTitle: 'Shaun Dev | 3D Web Developer Portfolio',
+    siteDescription: 'Interactive 3D developer portfolio by Shaun. Explore AI projects, WebGL experiments, React apps & creative 3D experiences in a hand-drawn gallery.',
+    aboutMe: "Shaun is a creative developer who builds interactive, engaging websites from scratch. He specializes in 3D web experiences, AI-powered applications, and clean, well-animated storytelling sites.",
+    githubUrl: 'https://github.com/Shaun520',
+    linkedinUrl: '',
+    instagramUrl: '',
+    xUrl: '',
+    tiktokUrl: '',
+    youtubeUrl: '',
+};
+
+// ===== 本地内容文件（替代原先的 Sanity 数据源） =====
+const DEV_CONTENT_PATH = resolve(__dirname, 'public/site.content.dev.json');
+
+// 加载本地站点内容（public/site.content.dev.json）
+function loadLocalContent() {
+    try {
+        return JSON.parse(readFileSync(DEV_CONTENT_PATH, 'utf8'));
+    } catch {
+        console.error('SEO Plugin: 无法读取 public/site.content.dev.json');
+        return { content: {} };
+    }
+}
+
+// ===== 从本地内容映射出 SEO 数据（结构兼容原 Sanity 查询结果） =====
+function buildLocalSeoData() {
+    const dev = loadLocalContent();
+    const content = dev.content || {};
+
+    // galleryProject
+    const projects = (content.gallery?.projects || []).map((p) => ({
+        title: p.title,
+        description: p.description || '',
+        url: p.url || '',
+        seoTitle: p.title,
+        seoDescription: p.description || '',
+        techStack: (p.techStack || []).map((t) => {
+            const name = String(t).split('/').pop() || '';
+            return name.replace(/\.[a-z0-9]+$/i, '');
+        }),
+    }));
+
+    // studioItem
+    const studio = (content.studio?.items || []).map((s) => {
+        const num = (v) => {
+            if (!v) return undefined;
+            const n = Number(String(v).replace(/[^\d]/g, ''));
+            return Number.isFinite(n) && n > 0 ? n : undefined;
+        };
+        return {
+            title: s.title || '',
+            platform: s.platform || 'blog',
+            url: s.url || '',
+            description: s.description || '',
+            thumbnailUrl: s.thumbnail || s.frontTexture || undefined,
+            date: s.date || undefined,
+            views: num(s.views),
+            likes: num(s.likes),
+            duration: s.duration,
+            readTime: s.readTime,
+        };
+    });
+
+    // awardCertificate：把本地奖项分组（featured/sotd/sotm/other）拍平为一条条记录
+    const awards = [];
+    for (const [group, block] of Object.entries(content.about?.awards || {})) {
+        const category = ['sotd', 'sotm'].includes(group) ? group : 'other';
+        for (const item of block?.items || []) {
+            awards.push({
+                title: item.label || group,
+                category,
+                date: item.date || undefined,
+                url: item.url || '',
+                seoTitle: item.label || group,
+                seoDescription: item.label || '',
+            });
+        }
+    }
+
+    // faq — 从 about 数据无从映射，先留空（JSON-LD / llms.txt 均自动跳过）
+    const faqList = [];
+
+    return { globalInfo: SITE_META, projects, studio, awards, faqList };
+}
 
 // Tech stack filename -> human-readable name mapping for JSON-LD
 const TECH_STACK_NAMES = {
@@ -31,7 +117,7 @@ function formatIsoDate(dateString) {
 }
 
 /**
- * Build dynamic JSON-LD structured data from Sanity content.
+ * Build dynamic JSON-LD structured data from local content.
  * This generates schema.org entities that AI search engines (Google AI Overviews,
  * Perplexity, Gemini) use to understand and cite content in their answers.
  */
@@ -41,10 +127,10 @@ function buildJsonLd(globalInfo, projects, studio, awards, faqList) {
     // --- 1. Person: Central node of the Knowledge Graph ---
     const person = {
         '@type': 'Person',
-        '@id': 'https://itomdev.com/#person',
-        name: 'Tomasz Szmajda',
-        alternateName: ['ITom', 'ITom Dev', 'Tomasz ITom Szmajda'],
-        url: 'https://itomdev.com',
+        '@id': `${SITE_URL}/#person`,
+        name: 'Shaun',
+        alternateName: ['Shaun', 'Shaun Dev', 'Shaun520'],
+        url: SITE_URL,
         jobTitle: 'Creative Frontend Developer',
         description: globalInfo?.aboutMe || 'Creative developer specializing in 3D web experiences.',
         knowsAbout: ['React', 'Three.js', 'JavaScript', 'TypeScript', 'GSAP', 'Next.js', 'WebGL', '3D Graphics', 'Web Development'],
@@ -62,21 +148,21 @@ function buildJsonLd(globalInfo, projects, studio, awards, faqList) {
     // --- 2. WebSite ---
     const website = {
         '@type': 'WebSite',
-        '@id': 'https://itomdev.com/#website',
-        url: 'https://itomdev.com',
-        name: globalInfo?.siteTitle || 'Tomasz "ITom" Szmajda | Creative 3D Portfolio',
-        description: globalInfo?.siteDescription || 'Interactive 3D Developer Portfolio by Tomasz Szmajda',
-        publisher: { '@id': 'https://itomdev.com/#person' }
+        '@id': `${SITE_URL}/#website`,
+        url: SITE_URL,
+        name: globalInfo?.siteTitle || 'Shaun Dev | 3D Web Developer Portfolio',
+        description: globalInfo?.siteDescription || 'Interactive 3D Developer Portfolio by Shaun',
+        publisher: { '@id': `${SITE_URL}/#person` }
     };
     graph.push(website);
 
     // --- 3. ProfilePage ---
     const profilePage = {
         '@type': 'ProfilePage',
-        '@id': 'https://itomdev.com/#profilepage',
-        url: 'https://itomdev.com',
-        mainEntity: { '@id': 'https://itomdev.com/#person' },
-        about: { '@id': 'https://itomdev.com/#person' }
+        '@id': `${SITE_URL}/#profilepage`,
+        url: SITE_URL,
+        mainEntity: { '@id': `${SITE_URL}/#person` },
+        about: { '@id': `${SITE_URL}/#person` }
     };
     graph.push(profilePage);
 
@@ -84,7 +170,7 @@ function buildJsonLd(globalInfo, projects, studio, awards, faqList) {
     if (faqList && faqList.length > 0) {
         const faqPage = {
             '@type': 'FAQPage',
-            '@id': 'https://itomdev.com/#faq',
+            '@id': `${SITE_URL}/#faq`,
             mainEntity: faqList.map(item => ({
                 '@type': 'Question',
                 name: item.question,
@@ -101,8 +187,8 @@ function buildJsonLd(globalInfo, projects, studio, awards, faqList) {
     if (projects && projects.length > 0) {
         graph.push({
             '@type': 'ItemList',
-            '@id': 'https://itomdev.com/#projectslist',
-            name: 'Portfolio Projects by Tomasz "ITom" Szmajda',
+            '@id': `${SITE_URL}/#projectslist`,
+            name: 'Portfolio Projects by Shaun',
             description: 'Selected web development projects showcasing React, Three.js, and creative frontend engineering.',
             numberOfItems: projects.length,
             itemListElement: projects.map((p, i) => ({
@@ -113,7 +199,7 @@ function buildJsonLd(globalInfo, projects, studio, awards, faqList) {
                     name: p.seoTitle || p.title,
                     description: p.seoDescription || p.description || '',
                     url: p.url || undefined,
-                    creator: { '@id': 'https://itomdev.com/#person' },
+                    creator: { '@id': `${SITE_URL}/#person` },
                     ...(p.techStack && p.techStack.length > 0 ? {
                         keywords: p.techStack.map(t => TECH_STACK_NAMES[t] || t).join(', ')
                     } : {}),
@@ -126,11 +212,11 @@ function buildJsonLd(globalInfo, projects, studio, awards, faqList) {
             const projectSlug = p.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
             graph.push({
                 '@type': 'CreativeWork',
-                '@id': `https://itomdev.com/#project-${projectSlug}`,
+                '@id': `${SITE_URL}/#project-${projectSlug}`,
                 name: p.seoTitle || p.title,
                 description: p.seoDescription || p.description || '',
                 url: p.url || undefined,
-                creator: { '@id': 'https://itomdev.com/#person' },
+                creator: { '@id': `${SITE_URL}/#person` },
                 ...(p.techStack && p.techStack.length > 0 ? {
                     keywords: p.techStack.map(t => TECH_STACK_NAMES[t] || t).join(', ')
                 } : {}),
@@ -153,66 +239,66 @@ function buildJsonLd(globalInfo, projects, studio, awards, faqList) {
 
                 graph.push({
                     '@type': 'VideoObject',
-                    '@id': `https://itomdev.com/#${studioSlug}`,
+                    '@id': `${SITE_URL}/#${studioSlug}`,
                     name: s.seoTitle || s.title,
                     description: s.seoDescription || s.description || '',
                     url: s.url || undefined,
                     contentUrl: s.url || undefined,
                     ...(embedUrl ? { embedUrl } : {}),
-                    thumbnailUrl: s.thumbnailUrl || 'https://itomdev.com/og-image.webp',
+                    thumbnailUrl: s.thumbnailUrl || `${SITE_URL}/og-image.webp`,
                     ...(s.duration ? { duration: `PT${s.duration.replace(':', 'M')}S` } : {}),
                     ...(s.date ? { uploadDate: formatIsoDate(s.date) } : {}),
                     ...(s.views ? { interactionStatistic: { '@type': 'InteractionCounter', interactionType: 'https://schema.org/WatchAction', userInteractionCount: s.views } } : {}),
-                    author: { '@id': 'https://itomdev.com/#person' },
+                    author: { '@id': `${SITE_URL}/#person` },
                 });
             } else if (s.platform === 'blog') {
                 graph.push({
                     '@type': 'Article',
-                    '@id': `https://itomdev.com/#${studioSlug}`,
+                    '@id': `${SITE_URL}/#${studioSlug}`,
                     headline: s.seoTitle || s.title,
                     description: s.seoDescription || s.description || '',
                     url: s.url || undefined,
-                    image: s.thumbnailUrl || 'https://itomdev.com/og-image.webp',
+                    image: s.thumbnailUrl || `${SITE_URL}/og-image.webp`,
                     ...(s.date ? { datePublished: formatIsoDate(s.date) } : {}),
                     ...(s.readTime ? { timeRequired: `PT${s.readTime.replace(' min', '')}M` } : {}),
-                    author: { '@id': 'https://itomdev.com/#person' },
+                    author: { '@id': `${SITE_URL}/#person` },
                 });
             } else if (s.platform === 'tiktok') {
                 graph.push({
                     '@type': 'VideoObject',
-                    '@id': `https://itomdev.com/#${studioSlug}`,
+                    '@id': `${SITE_URL}/#${studioSlug}`,
                     name: s.seoTitle || s.title,
                     description: s.seoDescription || s.description || '',
                     url: s.url || undefined,
                     contentUrl: s.url || undefined,
-                    thumbnailUrl: s.thumbnailUrl || 'https://itomdev.com/og-image.webp',
+                    thumbnailUrl: s.thumbnailUrl || `${SITE_URL}/og-image.webp`,
                     ...(s.date ? { uploadDate: formatIsoDate(s.date) } : {}),
                     ...(s.views ? { interactionStatistic: { '@type': 'InteractionCounter', interactionType: 'https://schema.org/WatchAction', userInteractionCount: s.views } } : {}),
                     ...(s.likes ? { aggregateRating: { '@type': 'AggregateRating', ratingCount: s.likes } } : {}),
-                    author: { '@id': 'https://itomdev.com/#person' },
+                    author: { '@id': `${SITE_URL}/#person` },
                 });
             } else if (s.platform === 'instagram' || s.platform === 'x' || s.platform === 'linkedin') {
                 graph.push({
                     '@type': 'SocialMediaPosting',
-                    '@id': `https://itomdev.com/#${studioSlug}`,
+                    '@id': `${SITE_URL}/#${studioSlug}`,
                     headline: s.seoTitle || s.title,
                     description: s.seoDescription || s.description || '',
                     url: s.url || undefined,
-                    image: s.thumbnailUrl || 'https://itomdev.com/og-image.webp',
+                    image: s.thumbnailUrl || `${SITE_URL}/og-image.webp`,
                     ...(s.date ? { datePublished: formatIsoDate(s.date) } : {}),
                     ...(s.likes ? { interactionStatistic: { '@type': 'InteractionCounter', interactionType: 'https://schema.org/LikeAction', userInteractionCount: s.likes } } : {}),
-                    author: { '@id': 'https://itomdev.com/#person' },
+                    author: { '@id': `${SITE_URL}/#person` },
                 });
             } else if (s.platform === 'codrops') {
                 graph.push({
                     '@type': 'Article',
-                    '@id': `https://itomdev.com/#${studioSlug}`,
+                    '@id': `${SITE_URL}/#${studioSlug}`,
                     headline: s.seoTitle || s.title,
                     description: s.seoDescription || s.description || '',
                     url: s.url || undefined,
-                    image: s.thumbnailUrl || 'https://itomdev.com/og-image.webp',
+                    image: s.thumbnailUrl || `${SITE_URL}/og-image.webp`,
                     ...(s.date ? { datePublished: formatIsoDate(s.date) } : {}),
-                    author: { '@id': 'https://itomdev.com/#person' },
+                    author: { '@id': `${SITE_URL}/#person` },
                 });
             }
         });
@@ -223,8 +309,8 @@ function buildJsonLd(globalInfo, projects, studio, awards, faqList) {
         const categoryLabels = { sotd: 'Site of the Day', sotm: 'Site of the Month', other: 'Honorable Mention' };
         graph.push({
             '@type': 'ItemList',
-            '@id': 'https://itomdev.com/#awardslist',
-            name: 'Web Design Awards received by Tomasz "ITom" Szmajda',
+            '@id': `${SITE_URL}/#awardslist`,
+            name: 'Web Design Awards received by Shaun',
             numberOfItems: awards.length,
             itemListElement: awards.map((a, i) => ({
                 '@type': 'ListItem',
@@ -236,7 +322,7 @@ function buildJsonLd(globalInfo, projects, studio, awards, faqList) {
                     url: a.url || undefined,
                     description: a.seoDescription || undefined,
                     award: categoryLabels[a.category] || a.category,
-                    creator: { '@id': 'https://itomdev.com/#person' },
+                    creator: { '@id': `${SITE_URL}/#person` },
                 }
             }))
         });
@@ -250,7 +336,7 @@ function buildJsonLd(globalInfo, projects, studio, awards, faqList) {
 
 // Helper to generate the llms.txt content in clean Markdown
 function buildLlmsTxt(globalInfo, projects, studio, awards, faqList) {
-    const siteTitle = globalInfo?.siteTitle || 'Tomasz "ITom" Szmajda | Creative 3D Portfolio';
+    const siteTitle = globalInfo?.siteTitle || 'Shaun Dev | 3D Web Developer Portfolio';
     const siteDescription = globalInfo?.siteDescription || 'Interactive 3D Developer Portfolio';
     const aboutMe = globalInfo?.aboutMe || 'I am a creative developer specializing in 3D web experiences.';
 
@@ -267,7 +353,7 @@ function buildLlmsTxt(globalInfo, projects, studio, awards, faqList) {
         content += `## Selected Portfolio Projects\n`;
         projects.forEach(p => {
             const tech = p.techStack ? ` (Tech: ${p.techStack.map(t => TECH_STACK_NAMES[t] || t).join(', ')})` : '';
-            content += `- [${p.seoTitle || p.title}](${p.url || 'https://itomdev.com'}): ${p.seoDescription || p.description || ''}${tech}\n`;
+            content += `- [${p.seoTitle || p.title}](${p.url || SITE_URL}): ${p.seoDescription || p.description || ''}${tech}\n`;
         });
         content += `\n`;
     }
@@ -275,7 +361,7 @@ function buildLlmsTxt(globalInfo, projects, studio, awards, faqList) {
     if (studio && studio.length > 0) {
         content += `## Studio Content & Publications\n`;
         studio.forEach(s => {
-            content += `- [${s.seoTitle || s.title} (${s.platform})](${s.url || 'https://itomdev.com'}): ${s.seoDescription || s.description || ''}\n`;
+            content += `- [${s.seoTitle || s.title} (${s.platform})](${s.url || SITE_URL}): ${s.seoDescription || s.description || ''}\n`;
         });
         content += `\n`;
     }
@@ -285,7 +371,7 @@ function buildLlmsTxt(globalInfo, projects, studio, awards, faqList) {
         const categoryLabels = { sotd: 'Site of the Day', sotm: 'Site of the Month', other: 'Honorable Mention' };
         awards.forEach(a => {
             const category = categoryLabels[a.category] || a.category;
-            content += `- **${category}** — [${a.seoTitle || a.title}](${a.url || 'https://itomdev.com'}): Awarded on ${a.date || 'unknown'}. ${a.seoDescription || ''}\n`;
+            content += `- **${category}** — [${a.seoTitle || a.title}](${a.url || SITE_URL}): Awarded on ${a.date || 'unknown'}. ${a.seoDescription || ''}\n`;
         });
         content += `\n`;
     }
@@ -307,24 +393,18 @@ export function generateSeoHtml() {
     async function getLlmsContent() {
         if (!cachedLlmsContent) {
             try {
-                const [globalInfo, projects, studio, awards, faqList] = await Promise.all([
-                    sanityClient.fetch(`*[_id == "globalInfo"][0]`),
-                    sanityClient.fetch(`*[_type == "galleryProject"]`),
-                    sanityClient.fetch(`*[_type == "studioItem"]`),
-                    sanityClient.fetch(`*[_type == "awardCertificate"]`),
-                    sanityClient.fetch(`*[_type == "faq"]`)
-                ]);
+                const { globalInfo, projects, studio, awards, faqList } = buildLocalSeoData();
                 cachedLlmsContent = buildLlmsTxt(globalInfo, projects, studio, awards, faqList);
             } catch (e) {
-                console.error('SEO Plugin Error: Failed to fetch Sanity data for llms.txt', e);
-                cachedLlmsContent = `# Tomasz Szmajda\n> Creative Developer\n`;
+                console.error('SEO Plugin Error: Failed to build llms.txt from local content', e);
+                cachedLlmsContent = `# Shaun Dev\n> Creative Developer\n`;
             }
         }
         return cachedLlmsContent;
     }
 
     return {
-        name: 'sanity-seo-plugin',
+        name: 'local-seo-plugin',
 
         // Serve llms.txt in local development mode
         configureServer(server) {
@@ -342,17 +422,10 @@ export function generateSeoHtml() {
         // This hook runs when Vite generates or serves index.html
         async transformIndexHtml(html) {
             try {
-                // Fetch all data in parallel
-                const [globalInfo, projects, studio, awards, faqList] = await Promise.all([
-                    sanityClient.fetch(`*[_id == "globalInfo"][0]`),
-                    sanityClient.fetch(`*[_type == "galleryProject"]`),
-                    sanityClient.fetch(`*[_type == "studioItem"] { ..., "thumbnailUrl": frontTexture.asset->url }`),
-                    sanityClient.fetch(`*[_type == "awardCertificate"]`),
-                    sanityClient.fetch(`*[_type == "faq"]`)
-                ]);
+                // 从本地内容构建 SEO 数据（替代原先的 Sanity 拉取）
+                const { globalInfo, projects, studio, awards, faqList } = buildLocalSeoData();
 
-                // Fallback values if globalInfo is not yet created in Sanity
-                const siteTitle = globalInfo?.siteTitle || 'ITom - Creative Developer';
+                const siteTitle = globalInfo?.siteTitle || 'Shaun Dev | 3D Web Developer Portfolio';
                 const siteDescription = globalInfo?.siteDescription || 'Interactive 3D portfolio of a creative web developer.';
                 const aboutMe = globalInfo?.aboutMe || 'I am a creative developer specializing in 3D web experiences.';
 
@@ -415,7 +488,7 @@ export function generateSeoHtml() {
 
                 // ====== PART 2: Build dynamic JSON-LD ======
                 const jsonLdSchemas = buildJsonLd(globalInfo, projects, studio, awards, faqList);
-                const jsonLdScript = `\n  <!-- Dynamic Structured Data (JSON-LD) — generated from Sanity at build time -->\n  <script type="application/ld+json">\n${JSON.stringify(jsonLdSchemas, null, 2)}\n  </script>\n`;
+                const jsonLdScript = `\n  <!-- Dynamic Structured Data (JSON-LD) — generated from local content at build time -->\n  <script type="application/ld+json">\n${JSON.stringify(jsonLdSchemas, null, 2)}\n  </script>\n`;
 
                 // ====== PART 3: Transform HTML ======
                 // Update the <title> tag
@@ -475,7 +548,7 @@ export function generateSeoHtml() {
 
                 return transformedHtml;
             } catch (error) {
-                console.error('SEO Plugin Error: Failed to fetch Sanity data', error);
+                console.error('SEO Plugin Error: Failed to build SEO from local content', error);
                 // Return original HTML on failure so we don't break the build
                 return html;
             }

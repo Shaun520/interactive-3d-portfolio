@@ -26,14 +26,14 @@ const baseSiteConfig = {
     // 品牌 (Brand)
     // =====================================================================
     brand: {
-        name: 'ITom',
-        displayName: 'ITom',
-        tagline: 'Creative 3D Portfolio',
-        author: 'Tomasz Szmajda',
-        domain: 'https://itomdev.com', // 用于 canonical / og:url
+        name: 'Shaun',
+        displayName: 'Shaun',
+        tagline: '3D Web Developer',
+        author: 'Shaun',
+        domain: 'https://shaun.dev', // 用于 canonical / og:url
         favicon: '/favico.png',
         console: {
-            title: 'TOM KING',
+            title: 'SHAUN',
             subtitle: 'PORTFOLIO',
             color: '#f33',
             message: 'Hi! Check out the code quality. Clean console = happy dev.',
@@ -44,11 +44,11 @@ const baseSiteConfig = {
     // SEO（默认值；每个房间可用 rooms[].meta 单独覆盖）
     // =====================================================================
     seo: {
-        title: 'ITom — Creative 3D Portfolio',
+        title: 'Shaun Dev | 3D Web Developer Portfolio',
         description:
-            'Interactive 3D developer portfolio by Tomasz "ITom" Szmajda. Explore WebGL experiments, React projects & GSAP animations in a hand-drawn gallery.',
+            'Interactive 3D developer portfolio by Shaun. Explore AI projects, WebGL experiments, React apps & creative 3D experiences in a hand-drawn gallery.',
         keywords: [
-            'Tomasz Szmajda', 'ITom', 'Tomasz ITom Szmajda',
+            'Shaun', 'Shaun Dev', 'Shaun520',
             'web developer portfolio', '3D web development', 'Three.js developer',
             'React portfolio', 'frontend engineer',
         ],
